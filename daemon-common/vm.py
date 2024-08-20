@@ -1235,7 +1235,7 @@ def get_list(
 #
 # VM Snapshot Tasks
 #
-def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
+def create_vm_snapshot(zkhandler, domain, snapshot_name=None, zk_only=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -1277,7 +1277,9 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
     # Iterrate through and create a snapshot for each RBD volume
     for rbd in rbd_list:
         pool, volume = rbd.split("/")
-        ret, msg = ceph.add_snapshot(zkhandler, pool, volume, snapshot_name)
+        ret, msg = ceph.add_snapshot(
+            zkhandler, pool, volume, snapshot_name, zk_only=zk_only
+        )
         if not ret:
             cleanup_failure()
             return False, msg
