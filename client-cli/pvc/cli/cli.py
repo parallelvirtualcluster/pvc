@@ -1954,7 +1954,7 @@ def cli_vm_snapshot_import(domain, snapshot_name, import_path, retain_snapshot):
         f"Importing snapshot '{snapshot_name}' of VM '{domain}'... ",
         newline=False,
     )
-    retcode, retmsg = pvc.lib.vm.vm_snapshot_import(
+    retcode, retmsg = pvc.lib.vm.vm_import_snapshot(
         CLI_CONFIG, domain, snapshot_name, import_path, retain_snapshot
     )
     if retcode:
