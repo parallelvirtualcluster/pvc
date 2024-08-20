@@ -1970,7 +1970,7 @@ def cli_vm_snapshot_import(
 
     The import will include the VM configuration, metainfo, and the point-in-time snapshot of all attached RBD volumes. Incremental imports will be automatically handled.
 
-    A VM named DOMAIN or with the same UUID must not exist; if a VM with the same name or UUID already exists, it must be removed, or renamed and then undefined (to preserve volumes), before importing.
+    A VM named DOMAIN or with the same UUID must not exist; if a VM with the same name or UUID already exists, it must be removed (or renamed and then undefined, to preserve volumes while freeing the UUID) before importing.
 
     If the "-r"/"--retain-snapshot" option is specified (the default), for incremental imports, only the parent snapshot is kept; for full imports, the imported snapshot is kept. If the "-R"/"--remove-snapshot" option is specified, the imported snapshot is removed.
 
@@ -2082,7 +2082,7 @@ def cli_vm_backup_restore(domain, backup_datestring, backup_path, retain_snapsho
 
     The restore will import the VM configuration, metainfo, and the point-in-time snapshot of all attached RBD volumes. Incremental backups will be automatically handled.
 
-    A VM named DOMAIN or with the same UUID must not exist; if a VM with the same name or UUID already exists, it must be removed, or renamed and then undefined (to preserve volumes), before restoring.
+    A VM named DOMAIN or with the same UUID must not exist; if a VM with the same name or UUID already exists, it must be removed (or renamed and then undefined, to preserve volumes while freeing the UUID) before importing.
 
     If the "-r"/"--retain-snapshot" option is specified (the default), for incremental restores, only the parent snapshot is kept; for full restores, the restored snapshot is kept. If the "-R"/"--remove-snapshot" option is specified, the imported snapshot is removed.
 

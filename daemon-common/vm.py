@@ -2627,7 +2627,7 @@ def vm_worker_import_snapshot(
     if dom_uuid:
         fail(
             celery,
-            f'VM "{domain}" already exists in the cluster; remove or rename it before importing a snapshot',
+            f"VM '{domain}' (UUID '{dom_uuid}') already exists in the cluster; remove it before importing a snapshot",
         )
         return
 
@@ -2669,6 +2669,15 @@ def vm_worker_import_snapshot(
         fail(
             celery,
             f"Failed to read source export details: {e}",
+        )
+        return
+
+    # Check that another VM with the same UUID doesn't already exist (rename is not enough!)
+    dom_name = getDomainName(zkhandler, export_source_details["vm_detail"]["uuid"])
+    if dom_name:
+        fail(
+            celery,
+            f"VM UUID '{export_source_details['vm_detail']['uuid']}' (Name '{dom_name}') already exists in the cluster; remove it before importing a snapshot",
         )
         return
 
