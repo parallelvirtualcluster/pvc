@@ -1969,7 +1969,7 @@ def ceph_volume_list(zkhandler, pool=None, limit=None, is_fuzzy=True):
 
 
 @ZKConnection(config)
-def ceph_volume_add(zkhandler, pool, name, size, force_flag):
+def ceph_volume_add(zkhandler, pool, name, size, force_flag=False):
     """
     Add a Ceph RBD volume to the PVC Ceph storage cluster.
     """

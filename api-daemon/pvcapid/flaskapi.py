@@ -6061,7 +6061,7 @@ class API_Storage_Ceph_Volume_Root(Resource):
             reqargs.get("pool", None),
             reqargs.get("volume", None),
             reqargs.get("size", None),
-            reqargs.get("force", False),
+            bool(strtobool(reqargs.get("force", "False"))),
         )
 
 
