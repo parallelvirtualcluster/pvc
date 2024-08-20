@@ -1908,7 +1908,7 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
             celery,
             f"VM state {domain_state} not in [stop, disable, fail] and not forcing",
         )
-        return
+        return False
 
     # Get the list of RBD images
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
@@ -1936,7 +1936,7 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
                 celery,
                 f"Failed to obtain lock list for volume {rbd}: {lock_list_stderr}",
             )
-            return
+            return False
 
         try:
             lock_list = jloads(lock_list_stdout)
@@ -1945,7 +1945,7 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
                 celery,
                 f"Failed to parse JSON lock list for volume {rbd}: {e}",
             )
-            return
+            return False
 
         if lock_list:
             for lock in lock_list:
@@ -1976,7 +1976,7 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
                 celery,
                 f"Failed to free RBD lock {lock['id']} on volume {rbd}: {lock_remove_stderr}",
             )
-            return
+            return False
 
     current_stage += 1
     return finish(
@@ -2005,7 +2005,7 @@ def vm_worker_attach_device(zkhandler, celery, domain, xml_spec):
             celery,
             f"VM {domain} not in start state; hot-attach unnecessary or impossible",
         )
-        return
+        return False
 
     dom = vm_worker_helper_getdom(dom_uuid)
     if dom is None:
@@ -2013,13 +2013,13 @@ def vm_worker_attach_device(zkhandler, celery, domain, xml_spec):
             celery,
             f"Failed to find Libvirt object for VM {domain}",
         )
-        return
+        return False
 
     try:
         dom.attachDevice(xml_spec)
     except Exception as e:
         fail(celery, e)
-        return
+        return False
 
     current_stage += 1
     return finish(
@@ -2048,7 +2048,7 @@ def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
             celery,
             f"VM {domain} not in start state; hot-detach unnecessary or impossible",
         )
-        return
+        return False
 
     dom = vm_worker_helper_getdom(dom_uuid)
     if dom is None:
@@ -2056,13 +2056,13 @@ def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
             celery,
             f"Failed to find Libvirt object for VM {domain}",
         )
-        return
+        return False
 
     try:
         dom.detachDevice(xml_spec)
     except Exception as e:
         fail(celery, e)
-        return
+        return False
 
     current_stage += 1
     return finish(
@@ -2083,7 +2083,7 @@ def vm_worker_create_snapshot(
             celery,
             f"Could not find VM '{domain}' in the cluster",
         )
-        return
+        return False
 
     if snapshot_name is None:
         now = datetime.now()
@@ -2095,7 +2095,7 @@ def vm_worker_create_snapshot(
                 celery,
                 "Snapshot name '{snapshot_name}' contains invalid characters; only alphanumeric, '.', '-', and '_' characters are allowed",
             )
-            return
+            return False
 
         current_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
         if current_snapshots and snapshot_name in current_snapshots:
@@ -2103,7 +2103,7 @@ def vm_worker_create_snapshot(
                 celery,
                 f"Snapshot name '{snapshot_name}' already exists for VM '{domain}'!",
             )
-            return
+            return False
 
     # Get the list of all RBD volumes
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
@@ -2148,7 +2148,7 @@ def vm_worker_create_snapshot(
                 celery,
                 msg.replace("ERROR: ", ""),
             )
-            return
+            return False
         else:
             snap_list.append(f"{pool}/{volume}@{snapshot_name}")
 
@@ -2224,7 +2224,7 @@ def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
             celery,
             f"Could not find VM '{domain}' in the cluster",
         )
-        return
+        return False
 
     if not zkhandler.exists(
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
@@ -2233,7 +2233,7 @@ def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
             celery,
             f"Could not find snapshot '{snapshot_name}' of VM '{domain}'!",
         )
-        return
+        return False
 
     _snapshots = zkhandler.read(
         ("domain.snapshots", dom_uuid, "domain_snapshot.rbd_snapshots", snapshot_name)
@@ -2266,7 +2266,7 @@ def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
                 celery,
                 msg.replace("ERROR: ", ""),
             )
-            return
+            return False
 
     current_stage += 1
     update(
@@ -2280,10 +2280,11 @@ def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
     )
     if not ret:
-        return (
-            False,
-            f'ERROR: Failed to delete snapshot "{snapshot_name}" of VM "{domain}" in Zookeeper.',
+        fail(
+            celery,
+            f'Failed to delete snapshot "{snapshot_name}" of VM "{domain}" in Zookeeper.',
         )
+        return False
 
     current_stage += 1
     return finish(
@@ -2302,7 +2303,7 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
             celery,
             f"Could not find VM '{domain}' in the cluster",
         )
-        return
+        return False
 
     # Verify that the VM is in a stopped state; renaming is not supported otherwise
     state = zkhandler.read(("domain.state", dom_uuid))
@@ -2311,7 +2312,7 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
             celery,
             f"VM '{domain}' is not stopped or disabled; VMs cannot be rolled back while running",
         )
-        return
+        return False
 
     # Verify that the snapshot exists
     if not zkhandler.exists(
@@ -2353,7 +2354,7 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
                 celery,
                 msg.replace("ERROR: ", ""),
             )
-            return
+            return False
 
     current_stage += 1
     update(
@@ -2399,7 +2400,7 @@ def vm_worker_export_snapshot(
             celery,
             f"Target path '{export_path}' is not a valid absolute path",
         )
-        return
+        return False
 
     # Ensure that backup_path (on this node) exists
     myhostname = gethostname().split(".")[0]
@@ -2408,7 +2409,7 @@ def vm_worker_export_snapshot(
             celery,
             f"ERROR: Target path '{export_path}' does not exist on node '{myhostname}'",
         )
-        return
+        return False
 
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
@@ -2417,7 +2418,7 @@ def vm_worker_export_snapshot(
             celery,
             f"Could not find VM '{domain}' in the cluster",
         )
-        return
+        return False
 
     if not zkhandler.exists(
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
@@ -2426,7 +2427,7 @@ def vm_worker_export_snapshot(
             celery,
             f"Could not find snapshot '{snapshot_name}' of VM '{domain}'",
         )
-        return
+        return False
 
     if incremental_parent is not None and not zkhandler.exists(
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", incremental_parent)
@@ -2435,7 +2436,7 @@ def vm_worker_export_snapshot(
             celery,
             f"Could not find snapshot '{snapshot_name}' of VM '{domain}'",
         )
-        return
+        return False
 
     # Get details about VM snapshot
     _, snapshot_timestamp, snapshot_xml, snapshot_rbdsnaps = zkhandler.read_many(
@@ -2494,7 +2495,7 @@ def vm_worker_export_snapshot(
             celery,
             f"Failed to create target directory '{export_target_path}': {e}",
         )
-        return
+        return False
 
     def export_cleanup():
         from shutil import rmtree
@@ -2507,7 +2508,7 @@ def vm_worker_export_snapshot(
     vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
     if not isinstance(vm_detail, dict):
         fail(celery, f"VM listing returned invalid data: {vm_detail}")
-        return
+        return False
 
     # Override the current XML with the snapshot XML; but all other metainfo is current
     vm_detail["xml"] = snapshot_xml
@@ -2555,7 +2556,7 @@ def vm_worker_export_snapshot(
                 fail(
                     celery, f"Failed to export snapshot for volume(s) '{pool}/{volume}'"
                 )
-                return
+                return False
             else:
                 export_files.append((f"images/{pool}.{volume}.{export_fileext}", size))
         else:
@@ -2567,7 +2568,7 @@ def vm_worker_export_snapshot(
                 fail(
                     celery, f"Failed to export snapshot for volume(s) '{pool}/{volume}'"
                 )
-                return
+                return False
             else:
                 export_files.append((f"images/{pool}.{volume}.{export_fileext}", size))
 
@@ -2605,7 +2606,7 @@ def vm_worker_export_snapshot(
     except Exception as e:
         export_cleanup()
         fail(celery, f"Failed to export configuration snapshot: {e}")
-        return
+        return False
 
     current_stage += 1
     return finish(
@@ -2629,7 +2630,7 @@ def vm_worker_import_snapshot(
             celery,
             f"VM '{domain}' (UUID '{dom_uuid}') already exists in the cluster; remove it before importing a snapshot",
         )
-        return
+        return False
 
     # Validate that the source path is valid
     if not re.match(r"^/", import_path):
@@ -2637,7 +2638,7 @@ def vm_worker_import_snapshot(
             celery,
             f"Source path '{import_path}; is not a valid absolute path",
         )
-        return
+        return False
 
     # Ensure that import_path (on this node) exists
     if not os.path.isdir(import_path):
@@ -2645,13 +2646,13 @@ def vm_worker_import_snapshot(
             celery,
             f"Source path '{import_path}' does not exist on node '{myhostname}'",
         )
-        return
+        return False
 
     # Ensure that domain path (on this node) exists
     vm_import_path = f"{import_path}/{domain}"
     if not os.path.isdir(vm_import_path):
         fail(celery, f"Source VM path '{vm_import_path}' does not exist")
-        return
+        return False
 
     # Ensure that the archives are present
     export_source_snapshot_file = f"{vm_import_path}/{snapshot_name}/snapshot.json"
@@ -2659,7 +2660,7 @@ def vm_worker_import_snapshot(
         fail(
             celery, f"ERROR: The specified source export '{snapshot_name}' do not exist"
         )
-        return
+        return False
 
     # Read the export file and get VM details
     try:
@@ -2670,7 +2671,7 @@ def vm_worker_import_snapshot(
             celery,
             f"Failed to read source export details: {e}",
         )
-        return
+        return False
 
     # Check that another VM with the same UUID doesn't already exist (rename is not enough!)
     dom_name = getDomainName(zkhandler, export_source_details["vm_detail"]["uuid"])
@@ -2679,7 +2680,7 @@ def vm_worker_import_snapshot(
             celery,
             f"VM UUID '{export_source_details['vm_detail']['uuid']}' (Name '{dom_name}') already exists in the cluster; remove it before importing a snapshot",
         )
-        return
+        return False
 
     # Handle incrementals
     incremental_parent = export_source_details.get("incremental_parent", None)
@@ -2692,7 +2693,7 @@ def vm_worker_import_snapshot(
                 celery,
                 f"Export is incremental but required incremental parent files do not exist at '{myhostname}:{vm_import_path}/{incremental_parent}'",
             )
-            return
+            return False
 
         try:
             with open(export_source_parent_snapshot_file) as fh:
@@ -2702,7 +2703,7 @@ def vm_worker_import_snapshot(
                 celery,
                 f"Failed to read source incremental parent export details: {e}",
             )
-            return
+            return False
 
     current_stage = 0
     total_stages = 2
@@ -2735,7 +2736,7 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to find parent volume for volume {pool}/{volume}; export may be corrupt or invalid: {e}",
                 )
-                return
+                return False
 
             # First we create the expected volumes then clean them up
             #   This process is a bit of a hack because rbd import does not expect an existing volume,
@@ -2753,7 +2754,7 @@ def vm_worker_import_snapshot(
             retcode, retmsg = ceph.add_volume(zkhandler, pool, volume, volume_size)
             if not retcode:
                 fail(celery, f"Failed to create imported volume: {retmsg}")
-                return
+                return False
 
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd remove {pool}/{volume}"
@@ -2763,7 +2764,7 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}",
                 )
-                return
+                return False
 
             current_stage += 1
             update(
@@ -2782,7 +2783,7 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to import parent export image {parent_volume_file}: {stderr}",
                 )
-                return
+                return False
 
         # Import VM config and metadata in import state, from the *source* details
         current_stage += 1
@@ -2812,13 +2813,13 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to define imported VM: {retmsg}",
                 )
-                return
+                return False
         except Exception as e:
             fail(
                 celery,
                 f"Failed to parse VM export details: {e}",
             )
-            return
+            return False
 
         # Handle the VM snapshots
         if retain_snapshot:
@@ -2831,15 +2832,15 @@ def vm_worker_import_snapshot(
             )
 
             # Create the parent snapshot
-            retcode, retmsg = vm_worker_create_snapshot(
+            retcode = vm_worker_create_snapshot(
                 zkhandler, None, domain, snapshot_name=incremental_parent, zk_only=True
             )
-            if not retcode:
+            if retcode is False:
                 fail(
                     celery,
-                    f"Failed to create imported snapshot for {incremental_parent} (parent): {retmsg}",
+                    f"Failed to create imported snapshot for {incremental_parent} (parent)",
                 )
-                return
+                return False
 
         for volume_file, volume_size in export_source_details.get("export_files"):
             current_stage += 1
@@ -2861,7 +2862,7 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to import incremental export image {volume_file}: {stderr}",
                 )
-                return
+                return False
 
             if not retain_snapshot:
                 retcode, stdout, stderr = common.run_os_command(
@@ -2872,7 +2873,7 @@ def vm_worker_import_snapshot(
                         celery,
                         f"Failed to remove imported image snapshot '{pool}/{volume}@{incremental_parent}': {stderr}",
                     )
-                    return
+                    return False
 
                 retcode, stdout, stderr = common.run_os_command(
                     f"rbd snap rm {pool}/{volume}@{snapshot_name}"
@@ -2882,7 +2883,7 @@ def vm_worker_import_snapshot(
                         celery,
                         f"Failed to remove imported image snapshot '{pool}/{volume}@{snapshot_name}': {stderr}",
                     )
-                    return
+                    return False
 
         # Now update VM config and metadata, from the *current* details
         current_stage += 1
@@ -2905,7 +2906,7 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to modify imported VM: {retmsg}",
                 )
-                return
+                return False
 
             retcode, retmsg = move_vm(
                 zkhandler,
@@ -2931,13 +2932,13 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to modify imported VM: {retmsg}",
                 )
-                return
+                return False
         except Exception as e:
             fail(
                 celery,
                 f"Failed to parse VM export details: {e}",
             )
-            return
+            return False
 
         if retain_snapshot:
             current_stage += 1
@@ -2949,15 +2950,15 @@ def vm_worker_import_snapshot(
             )
 
             # Create the child snapshot
-            retcode, retmsg = vm_worker_create_snapshot(
+            retcode = vm_worker_create_snapshot(
                 zkhandler, None, domain, snapshot_name=snapshot_name, zk_only=True
             )
-            if not retcode:
+            if retcode is False:
                 fail(
                     celery,
-                    f"Failed to create imported snapshot for {snapshot_name}: {retmsg}",
+                    f"Failed to create imported snapshot for {snapshot_name}",
                 )
-                return
+                return False
     else:
         for volume_file, volume_size in export_source_details.get("export_files"):
             volume_size = f"{volume_size}B"
@@ -2982,7 +2983,7 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to create imported volume: {retmsg}",
                 )
-                return
+                return False
 
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd remove {pool}/{volume}"
@@ -2992,7 +2993,7 @@ def vm_worker_import_snapshot(
                     celery,
                     f"Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}",
                 )
-                return
+                return False
 
             # Then we perform the actual import
             current_stage += 1
@@ -3021,7 +3022,7 @@ def vm_worker_import_snapshot(
                         celery,
                         f"Failed to remove imported image snapshot '{pool}/{volume}@{snapshot_name}': {stderr}",
                     )
-                    return
+                    return False
 
         # Import VM config and metadata in provision state
         current_stage += 1
@@ -3051,13 +3052,13 @@ def vm_worker_import_snapshot(
                     celery,
                     f"ERROR: Failed to define imported VM: {retmsg}",
                 )
-                return
+                return False
         except Exception as e:
             fail(
                 celery,
                 f"ERROR: Failed to parse VM export details: {e}",
             )
-            return
+            return False
 
         # Finally we handle the VM snapshot
         if retain_snapshot:
@@ -3069,15 +3070,15 @@ def vm_worker_import_snapshot(
                 total=total_stages,
             )
 
-            retcode, retmsg = vm_worker_create_snapshot(
+            retcode = vm_worker_create_snapshot(
                 zkhandler, None, domain, snapshot_name=snapshot_name, zk_only=True
             )
-            if not retcode:
+            if retcode is False:
                 fail(
                     celery,
-                    f"Failed to create imported snapshot for {snapshot_name}: {retmsg}",
+                    f"Failed to create imported snapshot for {snapshot_name}",
                 )
-                return
+                return False
 
     # 5. Start VM
     retcode, retmsg = start_vm(zkhandler, domain)
@@ -3086,7 +3087,7 @@ def vm_worker_import_snapshot(
             celery,
             f"ERROR: Failed to start imported VM {domain}: {retmsg}",
         )
-        return
+        return False
 
     return finish(
         celery,
