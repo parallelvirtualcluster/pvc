@@ -1484,7 +1484,7 @@ def export_vm_snapshot(
     def write_export_json(
         result=False,
         result_message="",
-        vm_configuration=None,
+        vm_detail=None,
         export_files=None,
         export_files_size=0,
         ttot=None,
@@ -1645,9 +1645,6 @@ def export_vm_snapshot(
         write_export_json(
             result=False,
             result_message=f"ERROR: {error_message}",
-            vm_detail=vm_detail,
-            export_files=export_files,
-            export_files_size=export_files_size,
         )
         return (
             False,
@@ -1666,7 +1663,7 @@ def export_vm_snapshot(
     write_export_json(
         result=True,
         result_message=result_message,
-        vm_configuration=snapshot_xml,
+        vm_detail=vm_detail,
         export_files=export_files,
         export_files_size=export_files_size,
         ttot=ttot,
@@ -1739,31 +1736,12 @@ def import_vm_snapshot(
                 f"ERROR: Failed to read source incremental parent export details: {e}",
             )
 
-    # 2. Import VM config and metadata in provision state
-    try:
-        retcode, retmsg = define_vm(
-            zkhandler,
-            export_source_details["vm_detail"]["xml"],
-            export_source_details["vm_detail"]["node"],
-            export_source_details["vm_detail"]["node_limit"],
-            export_source_details["vm_detail"]["node_selector"],
-            export_source_details["vm_detail"]["node_autostart"],
-            export_source_details["vm_detail"]["migration_method"],
-            export_source_details["vm_detail"]["migration_max_downtime"],
-            export_source_details["vm_detail"]["profile"],
-            export_source_details["vm_detail"]["tags"],
-            "import",
-        )
-        if not retcode:
-            return False, f"ERROR: Failed to define imported VM: {retmsg}"
-    except Exception as e:
-        return False, f"ERROR: Failed to parse VM export details: {e}"
-
     # 4. Import volumes
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
     if incremental_parent is not None:
         for volume_file, volume_size in export_source_details.get("export_files"):
+            volume_size = f"{volume_size}B"
             pool, volume, _ = volume_file.split("/")[-1].split(".")
             try:
                 parent_volume_file = [
@@ -1796,7 +1774,7 @@ def import_vm_snapshot(
                     f"ERROR: Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}",
                 )
 
-            # Next we import the parent images
+            # Next we import the parent image
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd import --export-format 2 --dest-pool {pool} {import_path}/{domain}/{incremental_parent}/{parent_volume_file} {volume}"
             )
@@ -1806,6 +1784,41 @@ def import_vm_snapshot(
                     f"ERROR: Failed to import parent export image {parent_volume_file}: {stderr}",
                 )
 
+        # Import VM config and metadata in import state, from the *source* details
+        try:
+            retcode, retmsg = define_vm(
+                zkhandler,
+                export_source_parent_details["vm_detail"]["xml"],
+                export_source_parent_details["vm_detail"]["node"],
+                export_source_parent_details["vm_detail"]["node_limit"],
+                export_source_parent_details["vm_detail"]["node_selector"],
+                export_source_parent_details["vm_detail"]["node_autostart"],
+                export_source_parent_details["vm_detail"]["migration_method"],
+                export_source_parent_details["vm_detail"]["migration_max_downtime"],
+                export_source_parent_details["vm_detail"]["profile"],
+                export_source_parent_details["vm_detail"]["tags"],
+                "import",
+            )
+            if not retcode:
+                return False, f"ERROR: Failed to define imported VM: {retmsg}"
+        except Exception as e:
+            return False, f"ERROR: Failed to parse VM export details: {e}"
+
+        # Handle the VM snapshots
+        if retain_snapshot:
+            # Create the parent snapshot
+            retcode, retmsg = create_vm_snapshot(
+                zkhandler, domain, snapshot_name=incremental_parent, zk_only=True
+            )
+            if not retcode:
+                return (
+                    False,
+                    f"ERROR: Failed to create imported snapshot for {incremental_parent} (parent): {retmsg}",
+                )
+
+        for volume_file, volume_size in export_source_details.get("export_files"):
+            volume_size = f"{volume_size}B"
+            pool, volume, _ = volume_file.split("/")[-1].split(".")
             # Then we import the incremental diffs
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd import-diff {import_path}/{domain}/{snapshot_name}/{volume_file} {pool}/{volume}"
@@ -1816,36 +1829,69 @@ def import_vm_snapshot(
                     f"ERROR: Failed to import incremental export image {volume_file}: {stderr}",
                 )
 
-            # Finally we remove the parent and child snapshots (no longer required required)
-            if retain_snapshot:
-                retcode, retmsg = ceph.add_snapshot(
-                    zkhandler,
-                    pool,
-                    volume,
-                    f"{incremental_parent}",
-                    zk_only=True,
-                )
-                if not retcode:
-                    return (
-                        False,
-                        f"ERROR: Failed to add imported image snapshot for {parent_volume_file}: {retmsg}",
-                    )
-            else:
+            if not retain_snapshot:
                 retcode, stdout, stderr = common.run_os_command(
                     f"rbd snap rm {pool}/{volume}@{incremental_parent}"
                 )
                 if retcode:
                     is_snapshot_remove_failed = True
                     which_snapshot_remove_failed.append(f"{pool}/{volume}")
-            retcode, stdout, stderr = common.run_os_command(
-                f"rbd snap rm {pool}/{volume}@{snapshot_name}"
-            )
-            if retcode:
-                is_snapshot_remove_failed = True
-                which_snapshot_remove_failed.append(f"{pool}/{volume}")
 
+                retcode, stdout, stderr = common.run_os_command(
+                    f"rbd snap rm {pool}/{volume}@{snapshot_name}"
+                )
+                if retcode:
+                    is_snapshot_remove_failed = True
+                    which_snapshot_remove_failed.append(f"{pool}/{volume}")
+
+        # Now update VM config and metadata, from the *current* details
+        try:
+            retcode, retmsg = modify_vm(
+                zkhandler,
+                domain,
+                False,
+                export_source_details["vm_detail"]["xml"],
+            )
+            if not retcode:
+                return False, f"ERROR: Failed to modify imported VM: {retmsg}"
+
+            retcode, retmsg = move_vm(
+                zkhandler,
+                domain,
+                export_source_details["vm_detail"]["node"],
+            )
+            if not retcode:
+                # We don't actually care if this fails, because it just means the vm was never moved
+                pass
+
+            retcode, retmsg = modify_vm_metadata(
+                zkhandler,
+                domain,
+                export_source_details["vm_detail"]["node_limit"],
+                export_source_details["vm_detail"]["node_selector"],
+                export_source_details["vm_detail"]["node_autostart"],
+                export_source_details["vm_detail"]["profile"],
+                export_source_details["vm_detail"]["migration_method"],
+                export_source_details["vm_detail"]["migration_max_downtime"],
+            )
+            if not retcode:
+                return False, f"ERROR: Failed to modify imported VM: {retmsg}"
+        except Exception as e:
+            return False, f"ERROR: Failed to parse VM export details: {e}"
+
+        if retain_snapshot:
+            # Create the child snapshot
+            retcode, retmsg = create_vm_snapshot(
+                zkhandler, domain, snapshot_name=snapshot_name, zk_only=True
+            )
+            if not retcode:
+                return (
+                    False,
+                    f"ERROR: Failed to create imported snapshot for {snapshot_name}: {retmsg}",
+                )
     else:
         for volume_file, volume_size in export_source_details.get("export_files"):
+            volume_size = f"{volume_size}B"
             pool, volume, _ = volume_file.split("/")[-1].split(".")
 
             # First we create the expected volumes then clean them up
@@ -1876,21 +1922,7 @@ def import_vm_snapshot(
                     f"ERROR: Failed to import export image {volume_file}: {stderr}",
                 )
 
-            # Finally we remove the source snapshot (not required)
-            if retain_snapshot:
-                retcode, retmsg = ceph.add_snapshot(
-                    zkhandler,
-                    pool,
-                    volume,
-                    f"{snapshot_name}",
-                    zk_only=True,
-                )
-                if not retcode:
-                    return (
-                        False,
-                        f"ERROR: Failed to add imported image snapshot for {volume_file}: {retmsg}",
-                    )
-            else:
+            if not retain_snapshot:
                 retcode, stdout, stderr = common.run_os_command(
                     f"rbd snap rm {pool}/{volume}@{snapshot_name}"
                 )
@@ -1899,6 +1931,37 @@ def import_vm_snapshot(
                         False,
                         f"ERROR: Failed to remove imported image snapshot for {volume_file}: {stderr}",
                     )
+
+        # 2. Import VM config and metadata in provision state
+        try:
+            retcode, retmsg = define_vm(
+                zkhandler,
+                export_source_details["vm_detail"]["xml"],
+                export_source_details["vm_detail"]["node"],
+                export_source_details["vm_detail"]["node_limit"],
+                export_source_details["vm_detail"]["node_selector"],
+                export_source_details["vm_detail"]["node_autostart"],
+                export_source_details["vm_detail"]["migration_method"],
+                export_source_details["vm_detail"]["migration_max_downtime"],
+                export_source_details["vm_detail"]["profile"],
+                export_source_details["vm_detail"]["tags"],
+                "import",
+            )
+            if not retcode:
+                return False, f"ERROR: Failed to define imported VM: {retmsg}"
+        except Exception as e:
+            return False, f"ERROR: Failed to parse VM export details: {e}"
+
+        # Finally we handle the VM snapshot
+        if retain_snapshot:
+            retcode, retmsg = create_vm_snapshot(
+                zkhandler, domain, snapshot_name=snapshot_name, zk_only=True
+            )
+            if not retcode:
+                return (
+                    False,
+                    f"ERROR: Failed to create imported snapshot for {snapshot_name}: {retmsg}",
+                )
 
     # 5. Start VM
     retcode, retmsg = start_vm(zkhandler, domain)
