@@ -1051,6 +1051,8 @@ def get_resource_metrics(zkhandler):
             "restart": 6,
             "stop": 7,
             "fail": 8,
+            "import": 9,
+            "restore": 10,
         }
         state = vm["state"]
         output_lines.append(

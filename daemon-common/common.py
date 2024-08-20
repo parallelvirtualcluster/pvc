@@ -82,6 +82,8 @@ vm_state_combinations = [
     "migrate",
     "unmigrate",
     "provision",
+    "import",
+    "restore",
 ]
 ceph_osd_state_combinations = [
     "up,in",
