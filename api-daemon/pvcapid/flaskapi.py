@@ -3206,7 +3206,7 @@ class API_VM_Snapshot(Resource):
             {
                 "task_id": task.id,
                 "task_name": "vm.create_snapshot",
-                "run_on": get_primary_node(),
+                "run_on": f"{get_primary_node()} (primary)",
             },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
@@ -3264,7 +3264,7 @@ class API_VM_Snapshot(Resource):
             {
                 "task_id": task.id,
                 "task_name": "vm.remove_snapshot",
-                "run_on": get_primary_node(),
+                "run_on": f"{get_primary_node()} (primary)",
             },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
@@ -3328,7 +3328,7 @@ class API_VM_Snapshot_Rollback(Resource):
             {
                 "task_id": task.id,
                 "task_name": "vm.rollback_snapshot",
-                "run_on": get_primary_node(),
+                "run_on": f"{get_primary_node()} (primary)",
             },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
@@ -3416,7 +3416,7 @@ class API_VM_Snapshot_Export(Resource):
             {
                 "task_id": task.id,
                 "task_name": "vm.export_snapshot",
-                "run_on": get_primary_node(),
+                "run_on": f"{get_primary_node()} (primary)",
             },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
@@ -3505,7 +3505,7 @@ class API_VM_Snapshot_Import(Resource):
             {
                 "task_id": task.id,
                 "task_name": "vm.import_snapshot",
-                "run_on": get_primary_node(),
+                "run_on": f"{get_primary_node()} (primary)",
             },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
