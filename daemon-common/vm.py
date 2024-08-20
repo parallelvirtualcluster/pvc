@@ -2076,6 +2076,15 @@ def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
 def vm_worker_create_snapshot(
     zkhandler, celery, domain, snapshot_name=None, zk_only=False
 ):
+    current_stage = 0
+    total_stages = 1
+    start(
+        celery,
+        f"Creating snapshot '{snapshot_name}' of VM '{domain}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -2108,14 +2117,7 @@ def vm_worker_create_snapshot(
     # Get the list of all RBD volumes
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
 
-    current_stage = 0
     total_stages = 2 + len(rbd_list)
-    start(
-        celery,
-        f"Creating snapshot '{snapshot_name}' of VM '{domain}'",
-        current=current_stage,
-        total=total_stages,
-    )
 
     snap_list = list()
 
@@ -2217,6 +2219,15 @@ def vm_worker_create_snapshot(
 
 
 def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
+    current_stage = 0
+    total_stages = 1
+    start(
+        celery,
+        f"Removing snapshot '{snapshot_name}' of VM '{domain}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -2240,14 +2251,7 @@ def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
     )
     rbd_snapshots = _snapshots.split(",")
 
-    current_stage = 0
     total_stages = 2 + len(rbd_snapshots)
-    start(
-        celery,
-        f"Removing snapshot '{snapshot_name}' of VM '{domain}'",
-        current=current_stage,
-        total=total_stages,
-    )
 
     for snap in rbd_snapshots:
         current_stage += 1
@@ -2296,6 +2300,15 @@ def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
 
 
 def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
+    current_stage = 0
+    total_stages = 1
+    start(
+        celery,
+        f"Rolling back to snapshot '{snapshot_name}' of VM '{domain}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -2328,14 +2341,7 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
     )
     rbd_snapshots = _snapshots.split(",")
 
-    current_stage = 0
     total_stages = 2 + len(rbd_snapshots)
-    start(
-        celery,
-        f"Rolling back to snapshot '{snapshot_name}' of VM '{domain}'",
-        current=current_stage,
-        total=total_stages,
-    )
 
     for snap in rbd_snapshots:
         current_stage += 1
@@ -2394,6 +2400,15 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
 def vm_worker_export_snapshot(
     zkhandler, celery, domain, snapshot_name, export_path, incremental_parent=None
 ):
+    current_stage = 0
+    total_stages = 1
+    start(
+        celery,
+        f"Exporting snapshot '{snapshot_name}' of VM '{domain}' to '{export_path}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
     # Validate that the target path is valid
     if not re.match(r"^/", export_path):
         fail(
@@ -2477,14 +2492,7 @@ def vm_worker_export_snapshot(
     )
     snapshot_rbdsnaps = snapshot_rbdsnaps.split(",")
 
-    current_stage = 0
     total_stages = 2 + len(snapshot_rbdsnaps)
-    start(
-        celery,
-        f"Exporting snapshot '{snapshot_name}' of VM '{domain}' to '{export_path}'",
-        current=current_stage,
-        total=total_stages,
-    )
 
     # Create destination directory
     export_target_path = f"{export_path}/{domain}/{snapshot_name}/images"
@@ -2622,6 +2630,15 @@ def vm_worker_import_snapshot(
 ):
     myhostname = gethostname().split(".")[0]
 
+    current_stage = 0
+    total_stages = 1
+    start(
+        celery,
+        f"Importing snapshot '{snapshot_name}' of VM '{domain}' from '{import_path}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
     # 0. Validations
     # Validate that VM does not exist in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
@@ -2705,18 +2722,11 @@ def vm_worker_import_snapshot(
             )
             return False
 
-    current_stage = 0
     total_stages = 2
     total_stages += 2 * len(export_source_details.get("export_files"))
     if incremental_parent is not None:
-        total_stages += 1
+        total_stages += 3
         total_stages += len(export_source_parent_details.get("export_files"))
-    start(
-        celery,
-        f"Importing snapshot '{snapshot_name}' of VM '{domain}' from '{import_path}'",
-        current=current_stage,
-        total=total_stages,
-    )
 
     # 4. Import volumes
     if incremental_parent is not None:
@@ -3089,6 +3099,7 @@ def vm_worker_import_snapshot(
         )
         return False
 
+    current_stage += 1
     return finish(
         celery,
         f"Successfully imported VM '{domain}' at snapshot '{snapshot_name}' from '{myhostname}:{import_path}'",
