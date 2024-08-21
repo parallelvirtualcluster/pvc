@@ -2076,6 +2076,10 @@ def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
 def vm_worker_create_snapshot(
     zkhandler, celery, domain, snapshot_name=None, zk_only=False
 ):
+    if snapshot_name is None:
+        now = datetime.now()
+        snapshot_name = now.strftime("%Y%m%d%H%M%S")
+
     current_stage = 0
     total_stages = 1
     start(
@@ -2094,25 +2098,21 @@ def vm_worker_create_snapshot(
         )
         return False
 
-    if snapshot_name is None:
-        now = datetime.now()
-        snapshot_name = now.strftime("%Y%m%d%H%M%S")
-    else:
-        reg = re.compile("^[a-z0-9.-_]+$")
-        if not reg.match(snapshot_name):
-            fail(
-                celery,
-                "Snapshot name '{snapshot_name}' contains invalid characters; only alphanumeric, '.', '-', and '_' characters are allowed",
-            )
-            return False
+    reg = re.compile("^[a-z0-9.-_]+$")
+    if not reg.match(snapshot_name):
+        fail(
+            celery,
+            "Snapshot name '{snapshot_name}' contains invalid characters; only alphanumeric, '.', '-', and '_' characters are allowed",
+        )
+        return False
 
-        current_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
-        if current_snapshots and snapshot_name in current_snapshots:
-            fail(
-                celery,
-                f"Snapshot name '{snapshot_name}' already exists for VM '{domain}'!",
-            )
-            return False
+    current_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
+    if current_snapshots and snapshot_name in current_snapshots:
+        fail(
+            celery,
+            f"Snapshot name '{snapshot_name}' already exists for VM '{domain}'!",
+        )
+        return False
 
     # Get the list of all RBD volumes
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
