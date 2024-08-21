@@ -2001,6 +2001,8 @@ def cli_vm_snapshot_import(
 )
 def cli_vm_backup():
     """
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+
     Manage backups of VMs in a PVC cluster.
     """
     pass
@@ -2030,6 +2032,8 @@ def cli_vm_backup():
 )
 def cli_vm_backup_create(domain, backup_path, incremental_parent, retain_snapshot):
     """
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+
     Create a backup of virtual machine DOMAIN to BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
     BACKUP_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing writes from the API daemon (normally running as "root"). The BACKUP_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
@@ -2076,6 +2080,8 @@ def cli_vm_backup_create(domain, backup_path, incremental_parent, retain_snapsho
 )
 def cli_vm_backup_restore(domain, backup_datestring, backup_path, retain_snapshot):
     """
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+
     Restore the backup BACKUP_DATESTRING of virtual machine DOMAIN stored in BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
     BACKUP_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing reads from the API daemon (normally running as "root"). The BACKUP_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
@@ -2114,6 +2120,8 @@ def cli_vm_backup_restore(domain, backup_datestring, backup_path, retain_snapsho
 @click.argument("backup_path")
 def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     """
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+
     Remove the backup BACKUP_DATESTRING, including snapshots, of virtual machine DOMAIN stored in BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
     WARNING: Removing an incremental parent will invalidate any existing incremental backups based on that backup.
