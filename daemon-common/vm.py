@@ -2422,7 +2422,7 @@ def vm_worker_export_snapshot(
     if not os.path.isdir(export_path):
         fail(
             celery,
-            f"ERROR: Target path '{export_path}' does not exist on node '{myhostname}'",
+            f"Target path '{export_path}' does not exist on node '{myhostname}'",
         )
         return False
 
@@ -2675,7 +2675,7 @@ def vm_worker_import_snapshot(
     export_source_snapshot_file = f"{vm_import_path}/{snapshot_name}/snapshot.json"
     if not os.path.isfile(export_source_snapshot_file):
         fail(
-            celery, f"ERROR: The specified source export '{snapshot_name}' do not exist"
+            celery, f"The specified source export '{snapshot_name}' do not exist"
         )
         return False
 
@@ -3060,13 +3060,13 @@ def vm_worker_import_snapshot(
             if not retcode:
                 fail(
                     celery,
-                    f"ERROR: Failed to define imported VM: {retmsg}",
+                    f"Failed to define imported VM: {retmsg}",
                 )
                 return False
         except Exception as e:
             fail(
                 celery,
-                f"ERROR: Failed to parse VM export details: {e}",
+                f"Failed to parse VM export details: {e}",
             )
             return False
 
@@ -3095,7 +3095,7 @@ def vm_worker_import_snapshot(
     if not retcode:
         fail(
             celery,
-            f"ERROR: Failed to start imported VM {domain}: {retmsg}",
+            f"Failed to start imported VM {domain}: {retmsg}",
         )
         return False
 
