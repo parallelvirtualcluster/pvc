@@ -2074,14 +2074,21 @@ def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
 
 
 def vm_worker_create_snapshot(
-    zkhandler, celery, domain, snapshot_name=None, zk_only=False
+    zkhandler,
+    celery,
+    domain,
+    snapshot_name=None,
+    zk_only=False,
+    override_current_stage=0,
+    override_total_stages=1,
 ):
     if snapshot_name is None:
         now = datetime.now()
         snapshot_name = now.strftime("%Y%m%d%H%M%S")
 
-    current_stage = 0
-    total_stages = 1
+    # This allows these to be called inside another run while still updating celery
+    current_stage = override_current_stage
+    total_stages = override_total_stages
     start(
         celery,
         f"Creating snapshot '{snapshot_name}' of VM '{domain}'",
@@ -2117,7 +2124,8 @@ def vm_worker_create_snapshot(
     # Get the list of all RBD volumes
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
 
-    total_stages = 2 + len(rbd_list)
+    if override_total_stages == 1:
+        total_stages += 1 + len(rbd_list)
 
     snap_list = list()
 
@@ -2218,9 +2226,17 @@ def vm_worker_create_snapshot(
     )
 
 
-def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
-    current_stage = 0
-    total_stages = 1
+def vm_worker_remove_snapshot(
+    zkhandler,
+    celery,
+    domain,
+    snapshot_name,
+    override_current_stage=0,
+    override_total_stages=1,
+):
+    # This allows these to be called inside another run while still updating celery
+    current_stage = override_total_stages
+    total_stages = override_total_stages
     start(
         celery,
         f"Removing snapshot '{snapshot_name}' of VM '{domain}'",
@@ -2251,7 +2267,8 @@ def vm_worker_remove_snapshot(zkhandler, celery, domain, snapshot_name):
     )
     rbd_snapshots = _snapshots.split(",")
 
-    total_stages = 2 + len(rbd_snapshots)
+    if override_total_stages == 1:
+        total_stages = 2 + len(rbd_snapshots)
 
     for snap in rbd_snapshots:
         current_stage += 1
@@ -2398,10 +2415,18 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
 
 
 def vm_worker_export_snapshot(
-    zkhandler, celery, domain, snapshot_name, export_path, incremental_parent=None
+    zkhandler,
+    celery,
+    domain,
+    snapshot_name,
+    export_path,
+    incremental_parent=None,
+    override_current_stage=0,
+    override_total_stages=1,
 ):
-    current_stage = 0
-    total_stages = 1
+    # This allows these to be called inside another run while still updating celery
+    current_stage = override_current_stage
+    total_stages = override_total_stages
     start(
         celery,
         f"Exporting snapshot '{snapshot_name}' of VM '{domain}' to '{export_path}'",
@@ -2492,7 +2517,8 @@ def vm_worker_export_snapshot(
     )
     snapshot_rbdsnaps = snapshot_rbdsnaps.split(",")
 
-    total_stages = 2 + len(snapshot_rbdsnaps)
+    if override_total_stages == 1:
+        total_stages = 2 + len(snapshot_rbdsnaps)
 
     # Create destination directory
     export_target_path = f"{export_path}/{domain}/{snapshot_name}/images"
@@ -2674,9 +2700,7 @@ def vm_worker_import_snapshot(
     # Ensure that the archives are present
     export_source_snapshot_file = f"{vm_import_path}/{snapshot_name}/snapshot.json"
     if not os.path.isfile(export_source_snapshot_file):
-        fail(
-            celery, f"The specified source export '{snapshot_name}' do not exist"
-        )
+        fail(celery, f"The specified source export '{snapshot_name}' do not exist")
         return False
 
     # Read the export file and get VM details
