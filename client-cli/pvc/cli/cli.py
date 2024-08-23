@@ -1749,7 +1749,7 @@ def cli_vm_unmigrate(domain, wait, force_live):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 def cli_vm_flush_locks(domain, wait_flag):
     """
@@ -1793,7 +1793,7 @@ def cli_vm_snapshot():
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 def cli_vm_snapshot_create(domain, snapshot_name, wait_flag):
     """
@@ -1827,7 +1827,7 @@ def cli_vm_snapshot_create(domain, snapshot_name, wait_flag):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt("Remove shapshot {snapshot_name} of VM {domain}")
 def cli_vm_snapshot_remove(domain, snapshot_name, wait_flag):
@@ -1860,7 +1860,7 @@ def cli_vm_snapshot_remove(domain, snapshot_name, wait_flag):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt(
     "Roll back to snapshot {snapshot_name} of {domain} and lose all data and changes since this snapshot"
@@ -1903,7 +1903,7 @@ def cli_vm_snapshot_rollback(domain, snapshot_name, wait_flag):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 def cli_vm_snapshot_export(
     domain, snapshot_name, export_path, incremental_parent, wait_flag
@@ -1957,7 +1957,7 @@ def cli_vm_snapshot_export(
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 def cli_vm_snapshot_import(
     domain, snapshot_name, import_path, retain_snapshot, wait_flag
@@ -2150,15 +2150,6 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
 )
 @connection_req
 @click.option(
-    "-f",
-    "--configuration",
-    "autobackup_cfgfile",
-    envvar="PVC_AUTOBACKUP_CFGFILE",
-    default=DEFAULT_AUTOBACKUP_FILENAME,
-    show_default=True,
-    help="Override default config file location.",
-)
-@click.option(
     "--email-report",
     "email_report",
     default=None,
@@ -2172,38 +2163,31 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     help="Force all backups to be full backups this run.",
 )
 @click.option(
-    "--cron",
-    "cron_flag",
-    default=False,
+    "--wait/--no-wait",
+    "wait_flag",
     is_flag=True,
-    help="Cron mode; don't error exit if this isn't the primary coordinator.",
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
-def cli_vm_autobackup(autobackup_cfgfile, email_report, force_full_flag, cron_flag):
+def cli_vm_autobackup(email_report, force_full_flag, wait_flag):
     """
     Perform automated backups of VMs, with integrated cleanup and full/incremental scheduling.
 
-    This command enables automatic backup of PVC VMs at the block level, leveraging the various "pvc vm backup"
+    This command enables automatic backup of PVC VMs at the block level, leveraging the various "pvc vm snapshot"
     functions with an internal rentention and cleanup system as well as determination of full vs. incremental
     backups at different intervals. VMs are selected based on configured VM tags. The destination storage
     may either be local, or provided by a remote filesystem which is automatically mounted and unmounted during
     the backup run via a set of configured commands before and after the backup run.
-
-    NOTE: This command performs its tasks in a local context. It MUST be run from the cluster's active primary
-    coordinator using the "local" connection only; if either is not correct, the command will error.
-
-    NOTE: This command should be run as the same user as the API daemon, usually "root" with "sudo -E" or in
-    a cronjob as "root", to ensure permissions are correct on the backup files. Failure to do so will still take
-    the backup, but the state update write will likely fail and the backup will become untracked. The command
-    will prompt for confirmation if it is found not to be running as "root" and this cannot be bypassed.
 
     This command should be run from cron or a timer at a regular interval (e.g. daily, hourly, etc.) which defines
     how often backups are taken. Backup format (full/incremental) and retention is based only on the number of
     recorded backups, not on the time interval between them. Backups taken manually outside of the "autobackup"
     command are not counted towards the format or retention of autobackups.
 
-    The PVC_AUTOBACKUP_CFGFILE envvar or "-f"/"--configuration" option can be used to override the default
-    configuration file path if required by a particular run. For full details of the possible options, please
-    see the example configuration file at "/usr/share/pvc/autobackup.sample.yaml".
+    The actual details of the autobackup, including retention policies, full-vs-incremental, pre- and post- run
+    mounting/unmounting commands, etc. are defined in the main PVC configuration file `/etc/pvc/pvc.conf`. See
+    the sample configuration for more details.
 
     An optional report on all current backups can be emailed to one or more email addresses using the
     "--email-report" flag. This report will include information on all current known backups.
@@ -2212,10 +2196,16 @@ def cli_vm_autobackup(autobackup_cfgfile, email_report, force_full_flag, cron_fl
     which can help synchronize the backups of existing VMs with new ones.
     """
 
-    # All work here is done in the helper function for portability; we don't even use "finish"
-    vm_autobackup(
-        CLI_CONFIG, autobackup_cfgfile, email_report, force_full_flag, cron_flag
+    retcode, retmsg = pvc.lib.vm.vm_autobackup(
+        CLI_CONFIG,
+        email_recipients=email_report,
+        force_full_flag=force_full_flag,
+        wait_flag=wait_flag,
     )
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
@@ -3722,7 +3712,7 @@ def cli_storage_benchmark():
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt(
     "Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue"
@@ -3811,7 +3801,7 @@ def cli_storage_osd():
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt(
     "Destroy all data on and create a new OSD database volume group on node {node} device {device}"
@@ -3886,7 +3876,7 @@ def cli_storage_osd_create_db_vg(node, device, wait_flag):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt("Destroy all data on and create new OSD(s) on node {node} device {device}")
 def cli_storage_osd_add(
@@ -3969,7 +3959,7 @@ def cli_storage_osd_add(
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt(
     "Destroy all data on and replace OSD {osdid} (and peer split OSDs) with new device {new_device}"
@@ -4024,7 +4014,7 @@ def cli_storage_osd_replace(
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt("Refresh OSD {osdid} (and peer split OSDs) on device {device}")
 def cli_storage_osd_refresh(osdid, device, wait_flag):
@@ -4069,7 +4059,7 @@ def cli_storage_osd_refresh(osdid, device, wait_flag):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 @confirm_opt("Remove and destroy data on OSD {osdid}")
 def cli_storage_osd_remove(osdid, force_flag, wait_flag):
@@ -6121,7 +6111,7 @@ def cli_provisioner_profile_list(limit, format_function):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress",
+    help="Wait or don't wait for task to complete, showing progress if waiting",
 )
 def cli_provisioner_create(
     name, profile, define_flag, start_flag, script_args, wait_flag

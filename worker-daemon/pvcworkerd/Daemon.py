@@ -47,6 +47,9 @@ from daemon_lib.benchmark import (
 from daemon_lib.vmbuilder import (
     worker_create_vm,
 )
+from daemon_lib.autobackup import (
+    worker_cluster_autobackup,
+)
 
 # Daemon version
 version = "0.9.98"
@@ -99,6 +102,21 @@ def storage_benchmark(self, pool=None, run_on="primary"):
         return worker_run_benchmark(zkhandler, self, config, pool)
 
     return run_storage_benchmark(self, pool)
+
+
+@celery.task(name="cluster.autobackup", bind=True, routing_key="run_on")
+def cluster_autobackup(self, force_full=False, email_recipients=None, run_on="primary"):
+    @ZKConnection(config)
+    def run_cluster_autobackup(
+        zkhandler, self, force_full=False, email_recipients=None
+    ):
+        return worker_cluster_autobackup(
+            zkhandler, self, force_full=force_full, email_recipients=email_recipients
+        )
+
+    return run_cluster_autobackup(
+        self, force_full=force_full, email_recipients=email_recipients
+    )
 
 
 @celery.task(name="vm.flush_locks", bind=True, routing_key="run_on")

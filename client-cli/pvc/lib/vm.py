@@ -595,6 +595,24 @@ def vm_import_snapshot(
     return get_wait_retdata(response, wait_flag)
 
 
+def vm_autobackup(config, email_recipients=None, force_full_flag=False, wait_flag=True):
+    """
+    Perform a cluster VM autobackup
+
+    API endpoint: POST /vm//autobackup
+    API arguments: email_recipients=email_recipients, force_full_flag=force_full_flag
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "email_recipients": email_recipients,
+        "force_full": force_full_flag,
+    }
+
+    response = call_api(config, "post", "/vm/autobackup", params=params)
+
+    return get_wait_retdata(response, wait_flag)
+
+
 def vm_vcpus_set(config, vm, vcpus, topology, restart):
     """
     Set the vCPU count of the VM with topology

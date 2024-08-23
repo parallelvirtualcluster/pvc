@@ -406,6 +406,78 @@ def get_configuration():
     return config
 
 
+def get_parsed_autobackup_configuration(config_file):
+    """
+    Load the configuration; this is the same main pvc.conf that the daemons read
+    """
+    print('Loading configuration from file "{}"'.format(config_file))
+
+    with open(config_file, "r") as cfgfh:
+        try:
+            o_config = yaml.load(cfgfh, Loader=yaml.SafeLoader)
+        except Exception as e:
+            print(f"ERROR: Failed to parse configuration file: {e}")
+            os._exit(1)
+
+    config = dict()
+
+    try:
+        o_cluster = o_config["cluster"]
+        config_cluster = {
+            "cluster": o_cluster["name"],
+            "autobackup_enabled": True,
+        }
+        config = {**config, **config_cluster}
+
+        o_autobackup = o_config["autobackup"]
+        if o_autobackup is None:
+            config["autobackup_enabled"] = False
+            return config
+
+        config_autobackup = {
+            "backup_root_path": o_autobackup["backup_root_path"],
+            "backup_root_suffix": o_autobackup["backup_root_suffix"],
+            "backup_tags": o_autobackup["backup_tags"],
+            "backup_schedule": o_autobackup["backup_schedule"],
+        }
+        config = {**config, **config_autobackup}
+
+        o_automount = o_autobackup["auto_mount"]
+        config_automount = {
+            "auto_mount_enabled": o_automount["enabled"],
+        }
+        config = {**config, **config_automount}
+        if config["auto_mount_enabled"]:
+            config["mount_cmds"] = list()
+            for _mount_cmd in o_automount["mount_cmds"]:
+                if "{backup_root_path}" in _mount_cmd:
+                    _mount_cmd = _mount_cmd.format(
+                        backup_root_path=config["backup_root_path"]
+                    )
+                config["mount_cmds"].append(_mount_cmd)
+            config["unmount_cmds"] = list()
+            for _unmount_cmd in o_automount["unmount_cmds"]:
+                if "{backup_root_path}" in _unmount_cmd:
+                    _unmount_cmd = _unmount_cmd.format(
+                        backup_root_path=config["backup_root_path"]
+                    )
+                config["unmount_cmds"].append(_unmount_cmd)
+
+    except Exception as e:
+        raise MalformedConfigurationError(e)
+
+    return config
+
+
+def get_autobackup_configuration():
+    """
+    Get the configuration.
+    """
+    pvc_config_file = get_configuration_path()
+    config = get_parsed_autobackup_configuration(pvc_config_file)
+    return config
+
+
 def validate_directories(config):
     if not os.path.exists(config["dynamic_directory"]):
         os.makedirs(config["dynamic_directory"])

@@ -3515,6 +3515,70 @@ class API_VM_Snapshot_Import(Resource):
 api.add_resource(API_VM_Snapshot_Import, "/vm/<vm>/snapshot/import")
 
 
+# /vm/autobackup
+class API_VM_Autobackup_Root(Resource):
+    @RequestParser(
+        [
+            {"name": "force_full"},
+            {"name": "email_recipients"},
+        ]
+    )
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Trigger a cluster autobackup job
+        ---
+        tags:
+          - provisioner
+        parameters:
+          - in: query
+            name: force_full
+            type: boolean
+            required: false
+            description: If set and true, triggers a full autobackup regardless of schedule
+          - in: query
+            name: email_recipients
+            type: array
+            description: A list of email addresses to send failure and report emails to
+            items:
+              type: string
+              example: "user@domain.tld"
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                task_id:
+                  type: string
+                  description: Task ID for the provisioner Celery worker
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+
+        task = run_celery_task(
+            "cluster.autobackup",
+            force_full=reqargs.get("force_full", False),
+            email_recipients=reqargs.get("email_recipients", None),
+            run_on="primary",
+        )
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "cluster.autobackup",
+                "run_on": f"{get_primary_node()} (primary)",
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
+
+
+api.add_resource(API_VM_Autobackup_Root, "/vm/autobackup")
+
+
 ##########################################################
 # Client API - Network
 ##########################################################
@@ -5070,7 +5134,7 @@ class API_Storage_Ceph_Benchmark(Resource):
             {
                 "task_id": task.id,
                 "task_name": "storage.benchmark",
-                "run_on": get_primary_node(),
+                "run_on": f"{get_primary_node()} (primary)",
             },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
@@ -9326,7 +9390,7 @@ class API_Provisioner_Create_Root(Resource):
             {
                 "task_id": task.id,
                 "task_name": "provisioner.create",
-                "run_on": get_primary_node(),
+                "run_on": f"{get_primary_node()} (primary)",
             },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
