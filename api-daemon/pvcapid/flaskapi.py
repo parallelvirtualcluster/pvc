@@ -3565,7 +3565,7 @@ class API_VM_Autobackup_Root(Resource):
 
         task = run_celery_task(
             "cluster.autobackup",
-            force_full=reqargs.get("force_full", False),
+            force_full=bool(strtobool(reqargs.get("force_full", "false"))),
             email_recipients=email_recipients,
             run_on="primary",
         )
