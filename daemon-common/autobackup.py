@@ -329,7 +329,7 @@ def worker_cluster_autobackup(
 
         now = datetime.now()
         datestring = now.strftime("%Y%m%d%H%M%S")
-        snapshot_name = f"autobackup_{datestring}"
+        snapshot_name = f"backup_{datestring}"
 
         # Take the VM snapshot (vm.vm_worker_create_snapshot)
         snap_list = list()
@@ -348,7 +348,7 @@ def worker_cluster_autobackup(
             current_stage += 1
             update(
                 celery,
-                f"[VM {vm_name}] Creating RBD snapshot of {rbd}",
+                f"[{vm_name}] Creating RBD snapshot of {rbd}",
                 current=current_stage,
                 total=total_stages,
             )
@@ -375,7 +375,7 @@ def worker_cluster_autobackup(
         current_stage += 1
         update(
             celery,
-            f"[VM {vm_name}] Creating VM configuration snapshot",
+            f"[{vm_name}] Creating VM configuration snapshot",
             current=current_stage,
             total=total_stages,
         )
@@ -435,7 +435,7 @@ def worker_cluster_autobackup(
             makedirs(export_target_path)
         except Exception as e:
             error_message = (
-                f"[VM {vm_name}] Failed to create target directory '{export_target_path}': {e}",
+                f"[{vm_name}] Failed to create target directory '{export_target_path}': {e}",
             )
             log_err(celery, error_message)
             send_execution_failure_report(
@@ -483,7 +483,7 @@ def worker_cluster_autobackup(
             current_stage += 1
             update(
                 celery,
-                f"[VM {vm_name}] Exporting {snap_str}",
+                f"[{vm_name}] Exporting RBD snapshot {snap_str}",
                 current=current_stage,
                 total=total_stages,
             )
@@ -494,7 +494,7 @@ def worker_cluster_autobackup(
                 )
                 if retcode:
                     error_message = (
-                        f"[VM {vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
+                        f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
                     )
                     log_err(celery, error_message)
                     send_execution_failure_report(
@@ -518,7 +518,7 @@ def worker_cluster_autobackup(
                 )
                 if retcode:
                     error_message = (
-                        f"[VM {vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
+                        f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
                     )
                     log_err(celery, error_message)
                     send_execution_failure_report(
@@ -540,7 +540,7 @@ def worker_cluster_autobackup(
         current_stage += 1
         update(
             celery,
-            f"[VM {vm_name}] Writing snapshot details",
+            f"[{vm_name}] Writing snapshot details",
             current=current_stage,
             total=total_stages,
         )
@@ -573,7 +573,7 @@ def worker_cluster_autobackup(
                 jdump(export_details, fh)
         except Exception as e:
             error_message = (
-                f"[VM {vm_name}] Failed to export configuration snapshot: {e}",
+                f"[{vm_name}] Failed to export configuration snapshot: {e}",
             )
             log_err(celery, error_message)
             send_execution_failure_report(
@@ -591,7 +591,7 @@ def worker_cluster_autobackup(
                 current_stage += 1
                 update(
                     celery,
-                    f"[VM {vm_name}] Removing {snap}",
+                    f"[{vm_name}] Removing RBD snapshot {snap}",
                     current=current_stage,
                     total=total_stages,
                 )
@@ -614,7 +614,7 @@ def worker_cluster_autobackup(
             current_stage += 1
             update(
                 celery,
-                f"[VM {vm_name}] Removing VM configuration snapshot",
+                f"[{vm_name}] Removing VM configuration snapshot",
                 current=current_stage,
                 total=total_stages,
             )
@@ -624,7 +624,7 @@ def worker_cluster_autobackup(
             )
             if not ret:
                 error_message = (
-                    f"[VM {vm_name}] Failed to remove snapshot from Zookeeper",
+                    f"[{vm_name}] Failed to remove snapshot from Zookeeper",
                 )
                 log_err(celery, error_message)
                 send_execution_failure_report(
