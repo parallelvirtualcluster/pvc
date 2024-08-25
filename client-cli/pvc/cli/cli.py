@@ -2176,7 +2176,7 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     is_flag=True,
     default=False,
     show_default=True,
-    help="Run in cron mode (equivalent to '--no-wait').",
+    help="Run in cron mode (returns immediately with no output once job is submitted).",
 )
 def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
     """
@@ -2221,7 +2221,11 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
 
     if retcode and wait_flag:
         retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
-    finish(retcode, retmsg)
+
+    if cron_flag:
+        finish(retcode, None)
+    else:
+        finish(retcode, retmsg)
 
 
 ###############################################################################
