@@ -25,7 +25,6 @@ from json import dump as jdump
 from os import popen, makedirs, path, scandir
 from shutil import rmtree
 from subprocess import run, PIPE
-from time import time
 
 from daemon_lib.common import run_os_command
 from daemon_lib.config import get_autobackup_configuration
@@ -136,7 +135,7 @@ def send_execution_summary_report(
                     f"    {backup_date}: Success in {backup.get('runtime_secs', 0)} seconds, ID {datestring}, type {backup.get('type', 'unknown')}"
                 )
                 email.append(
-                    f"                         Backup contains {len(backup.get('backup_files'))} files totaling {ceph.format_bytes_tohuman(backup.get('backup_size_bytes', 0))} ({backup.get('backup_size_bytes', 0)} bytes)"
+                    f"                         Backup contains {len(backup.get('export_files'))} files totaling {ceph.format_bytes_tohuman(backup.get('export_size_bytes', 0))} ({backup.get('export_size_bytes', 0)} bytes)"
                 )
             else:
                 email.append(
@@ -149,6 +148,461 @@ def send_execution_summary_report(
             p.write("\n".join(email))
     except Exception as e:
         log_err(f"Failed to send report email: {e}")
+
+
+def run_vm_backup(
+    zkhandler, celery, current_stage, total_stages, config, vm_detail, force_full=False
+):
+    vm_name = vm_detail["name"]
+    dom_uuid = vm_detail["uuid"]
+    backup_suffixed_path = (
+        f"{config['backup_root_path']}/{config['backup_root_suffix']}"
+    )
+    vm_backup_path = f"{backup_suffixed_path}/{vm_name}"
+    autobackup_state_file = f"{vm_backup_path}/.autobackup.json"
+    full_interval = config["backup_schedule"]["full_interval"]
+    full_retention = config["backup_schedule"]["full_retention"]
+
+    if not path.exists(vm_backup_path) or not path.exists(autobackup_state_file):
+        # There are no existing backups so the list is empty
+        state_data = dict()
+        tracked_backups = list()
+    else:
+        with open(autobackup_state_file) as fh:
+            state_data = jload(fh)
+        tracked_backups = state_data["tracked_backups"]
+
+    full_backups = [b for b in tracked_backups if b["type"] == "full"]
+    if len(full_backups) > 0:
+        last_full_backup = full_backups[0]
+        last_full_backup_idx = tracked_backups.index(last_full_backup)
+        if force_full:
+            this_backup_incremental_parent = None
+            this_backup_retain_snapshot = True
+        elif last_full_backup_idx >= full_interval - 1:
+            this_backup_incremental_parent = None
+            this_backup_retain_snapshot = True
+        else:
+            this_backup_incremental_parent = last_full_backup["datestring"]
+            this_backup_retain_snapshot = False
+    else:
+        # The very first ackup must be full to start the tree
+        this_backup_incremental_parent = None
+        this_backup_retain_snapshot = True
+
+    export_type = (
+        "incremental" if this_backup_incremental_parent is not None else "full"
+    )
+
+    now = datetime.now()
+    datestring = now.strftime("%Y%m%d%H%M%S")
+    snapshot_name = f"ab{datestring}"
+
+    # Take the VM snapshot (vm.vm_worker_create_snapshot)
+    snap_list = list()
+
+    failure = False
+    export_files = None
+    export_files_size = 0
+
+    def update_tracked_backups():
+        # Read export file to get details
+        backup_json_file = (
+            f"{backup_suffixed_path}/{vm_name}/{snapshot_name}/snapshot.json"
+        )
+        with open(backup_json_file) as fh:
+            backup_json = jload(fh)
+        tracked_backups.insert(0, backup_json)
+
+        state_data["tracked_backups"] = tracked_backups
+        with open(autobackup_state_file, "w") as fh:
+            jdump(state_data, fh)
+
+        return tracked_backups
+
+    def write_backup_summary(success=False, message=""):
+        ttotal = (datetime.now() - now).total_seconds()
+        export_details = {
+            "type": export_type,
+            "result": success,
+            "message": message,
+            "datestring": datestring,
+            "runtime_secs": ttotal,
+            "snapshot_name": snapshot_name,
+            "incremental_parent": this_backup_incremental_parent,
+            "vm_detail": vm_detail,
+            "export_files": export_files,
+            "export_size_bytes": export_files_size,
+        }
+        try:
+            with open(
+                f"{backup_suffixed_path}/{vm_name}/{snapshot_name}/snapshot.json",
+                "w",
+            ) as fh:
+                jdump(export_details, fh)
+        except Exception as e:
+            log_err(celery, f"Error exporting snapshot details: {e}")
+            return False, e
+
+        return True, ""
+
+    def cleanup_failure():
+        for snapshot in snap_list:
+            rbd, snapshot_name = snapshot.split("@")
+            pool, volume = rbd.split("/")
+            # We capture no output here, because if this fails too we're in a deep
+            # error chain and will just ignore it
+            ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
+
+    rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
+    final_stage = (
+        current_stage
+        + 5
+        + len(rbd_list)
+        + (len(rbd_list) if this_backup_retain_snapshot else 0)
+    )
+
+    for rbd in rbd_list:
+        current_stage += 1
+        update(
+            celery,
+            f"[{vm_name}] Creating RBD snapshot of {rbd}",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        pool, volume = rbd.split("/")
+        ret, msg = ceph.add_snapshot(
+            zkhandler, pool, volume, snapshot_name, zk_only=False
+        )
+        if not ret:
+            cleanup_failure()
+            error_message = msg.replace("ERROR: ", "")
+            log_err(celery, error_message)
+            failure = True
+            break
+        else:
+            snap_list.append(f"{pool}/{volume}@{snapshot_name}")
+
+    if failure:
+        error_message = (f"[{vm_name}] Error in snapshot export, skipping",)
+        current_stage = final_stage
+        write_backup_summary(message=error_message)
+        tracked_backups = update_tracked_backups()
+        update(
+            celery,
+            error_message,
+            current=current_stage,
+            total=total_stages,
+        )
+        return tracked_backups, current_stage
+
+    current_stage += 1
+    update(
+        celery,
+        f"[{vm_name}] Creating VM configuration snapshot",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Get the current domain XML
+    vm_config = zkhandler.read(("domain.xml", dom_uuid))
+
+    # Add the snapshot entry to Zookeeper
+    ret = zkhandler.write(
+        [
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.name",
+                    snapshot_name,
+                ),
+                snapshot_name,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.timestamp",
+                    snapshot_name,
+                ),
+                now.strftime("%s"),
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.xml",
+                    snapshot_name,
+                ),
+                vm_config,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.rbd_snapshots",
+                    snapshot_name,
+                ),
+                ",".join(snap_list),
+            ),
+        ]
+    )
+    if not ret:
+        error_message = (f"[{vm_name}] Error in snapshot export, skipping",)
+        current_stage = final_stage
+        log_err(celery, error_message)
+        write_backup_summary(message=error_message)
+        tracked_backups = update_tracked_backups()
+        update(
+            celery,
+            error_message,
+            current=current_stage,
+            total=total_stages,
+        )
+        return tracked_backups, current_stage
+
+    # Export the snapshot (vm.vm_worker_export_snapshot)
+    export_target_path = f"{backup_suffixed_path}/{vm_name}/{snapshot_name}/images"
+
+    try:
+        makedirs(export_target_path)
+    except Exception as e:
+        error_message = (
+            f"[{vm_name}] Failed to create target directory '{export_target_path}': {e}",
+        )
+        current_stage = final_stage
+        log_err(celery, error_message)
+        write_backup_summary(message=error_message)
+        tracked_backups = update_tracked_backups()
+        update(
+            celery,
+            f"[{vm_name}] Error in snapshot export, skipping",
+            current=current_stage,
+            total=total_stages,
+        )
+        return tracked_backups, current_stage
+
+    def export_cleanup():
+        from shutil import rmtree
+
+        rmtree(f"{backup_suffixed_path}/{vm_name}/{snapshot_name}")
+
+    # Set the export filetype
+    if this_backup_incremental_parent is not None:
+        export_fileext = "rbddiff"
+    else:
+        export_fileext = "rbdimg"
+
+    snapshot_volumes = list()
+    for rbdsnap in snap_list:
+        pool, _volume = rbdsnap.split("/")
+        volume, name = _volume.split("@")
+        ret, snapshots = ceph.get_list_snapshot(
+            zkhandler, pool, volume, limit=name, is_fuzzy=False
+        )
+        if ret:
+            snapshot_volumes += snapshots
+
+    export_files = list()
+    for snapshot_volume in snapshot_volumes:
+        snap_pool = snapshot_volume["pool"]
+        snap_volume = snapshot_volume["volume"]
+        snap_snapshot_name = snapshot_volume["snapshot"]
+        snap_size = snapshot_volume["stats"]["size"]
+        snap_str = f"{snap_pool}/{snap_volume}@{snap_snapshot_name}"
+
+        current_stage += 1
+        update(
+            celery,
+            f"[{vm_name}] Exporting RBD snapshot {snap_str}",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        if this_backup_incremental_parent is not None:
+            retcode, stdout, stderr = run_os_command(
+                f"rbd export-diff --from-snap {this_backup_incremental_parent} {snap_pool}/{snap_volume}@{snap_snapshot_name} {export_target_path}/{snap_pool}.{snap_volume}.{export_fileext}"
+            )
+            if retcode:
+                error_message = (
+                    f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
+                )
+                failure = True
+                break
+            else:
+                export_files.append(
+                    (
+                        f"images/{snap_pool}.{snap_volume}.{export_fileext}",
+                        snap_size,
+                    )
+                )
+        else:
+            retcode, stdout, stderr = run_os_command(
+                f"rbd export --export-format 2 {snap_pool}/{snap_volume}@{snap_snapshot_name} {export_target_path}/{snap_pool}.{snap_volume}.{export_fileext}"
+            )
+            if retcode:
+                error_message = (
+                    f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
+                )
+                failure = True
+                break
+            else:
+                export_files.append(
+                    (
+                        f"images/{snap_pool}.{snap_volume}.{export_fileext}",
+                        snap_size,
+                    )
+                )
+
+    if failure:
+        current_stage = final_stage
+        log_err(celery, error_message)
+        write_backup_summary(message=error_message)
+        tracked_backups = update_tracked_backups()
+        update(
+            celery,
+            error_message,
+            current=current_stage,
+            total=total_stages,
+        )
+        return tracked_backups, current_stage
+
+    current_stage += 1
+    update(
+        celery,
+        f"[{vm_name}] Writing snapshot details",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    def get_dir_size(pathname):
+        total = 0
+        with scandir(pathname) as it:
+            for entry in it:
+                if entry.is_file():
+                    total += entry.stat().st_size
+                elif entry.is_dir():
+                    total += get_dir_size(entry.path)
+        return total
+
+    export_files_size = get_dir_size(export_target_path)
+
+    ret, e = write_backup_summary(success=True)
+    if not ret:
+        error_message = (f"[{vm_name}] Failed to export configuration snapshot: {e}",)
+        current_stage = final_stage
+        log_err(celery, error_message)
+        write_backup_summary(message=error_message)
+        tracked_backups = update_tracked_backups()
+        update(
+            celery,
+            error_message,
+            current=current_stage,
+            total=total_stages,
+        )
+        return tracked_backups, current_stage
+
+    # Clean up the snapshot (vm.vm_worker_remove_snapshot)
+    if not this_backup_retain_snapshot:
+        for snap in snap_list:
+            current_stage += 1
+            update(
+                celery,
+                f"[{vm_name}] Removing RBD snapshot {snap}",
+                current=current_stage,
+                total=total_stages,
+            )
+
+            rbd, name = snap.split("@")
+            pool, volume = rbd.split("/")
+            ret, msg = ceph.remove_snapshot(zkhandler, pool, volume, name)
+            if not ret:
+                error_message = msg.replace("ERROR: ", f"[{vm_name}] ")
+                failure = True
+                break
+
+        if failure:
+            current_stage = final_stage
+            log_err(celery, error_message)
+            write_backup_summary(message=error_message)
+            tracked_backups = update_tracked_backups()
+            update(
+                celery,
+                error_message,
+                current=current_stage,
+                total=total_stages,
+            )
+            return tracked_backups, current_stage
+
+        current_stage += 1
+        update(
+            celery,
+            f"[{vm_name}] Removing VM configuration snapshot",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        ret = zkhandler.delete(
+            ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
+        )
+        if not ret:
+            error_message = (f"[{vm_name}] Failed to remove VM snapshot; continuing",)
+            log_err(celery, error_message)
+
+    current_stage += 1
+    update(
+        celery,
+        f"Finding obsolete incremental backups for '{vm_name}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    marked_for_deletion = list()
+    # Find any full backups that are expired
+    found_full_count = 0
+    for backup in tracked_backups:
+        if backup["type"] == "full":
+            found_full_count += 1
+            if found_full_count > full_retention:
+                marked_for_deletion.append(backup)
+    # Find any incremental backups that depend on marked parents
+    for backup in tracked_backups:
+        if backup["type"] == "incremental" and backup["incremental_parent"] in [
+            b["datestring"] for b in marked_for_deletion
+        ]:
+            marked_for_deletion.append(backup)
+
+    current_stage += 1
+    if len(marked_for_deletion) > 0:
+        update(
+            celery,
+            f"Cleaning up aged out backups for '{vm_name}'",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        for backup_to_delete in marked_for_deletion:
+            ret = vm.vm_worker_remove_snapshot(
+                zkhandler, None, vm_name, backup_to_delete["snapshot_name"]
+            )
+            if ret is False:
+                error_message = f"Failed to remove obsolete backup snapshot '{backup_to_delete['snapshot_name']}', leaving in tracked backups"
+                log_err(celery, error_message)
+            else:
+                rmtree(f"{vm_backup_path}/{backup_to_delete['snapshot_name']}")
+                tracked_backups.remove(backup_to_delete)
+
+    current_stage += 1
+    update(
+        celery,
+        "Updating tracked backups",
+        current=current_stage,
+        total=total_stages,
+    )
+    tracked_backups = update_tracked_backups()
+    return tracked_backups, current_stage
 
 
 def worker_cluster_autobackup(
@@ -202,7 +656,6 @@ def worker_cluster_autobackup(
         makedirs(backup_suffixed_path)
 
     full_interval = config["backup_schedule"]["full_interval"]
-    full_retention = config["backup_schedule"]["full_retention"]
 
     backup_vms = list()
     for vm_detail in vm_list:
@@ -296,419 +749,16 @@ def worker_cluster_autobackup(
 
     # Execute the backup: take a snapshot, then export the snapshot
     for vm_detail in backup_vms:
-        vm_name = vm_detail["name"]
-        dom_uuid = vm_detail["uuid"]
-        vm_backup_path = f"{backup_suffixed_path}/{vm_name}"
-        autobackup_state_file = f"{vm_backup_path}/.autobackup.json"
-        if not path.exists(vm_backup_path) or not path.exists(autobackup_state_file):
-            # There are no existing backups so the list is empty
-            state_data = dict()
-            tracked_backups = list()
-        else:
-            with open(autobackup_state_file) as fh:
-                state_data = jload(fh)
-            tracked_backups = state_data["tracked_backups"]
-
-        full_backups = [b for b in tracked_backups if b["type"] == "full"]
-        if len(full_backups) > 0:
-            last_full_backup = full_backups[0]
-            last_full_backup_idx = tracked_backups.index(last_full_backup)
-            if force_full:
-                this_backup_incremental_parent = None
-                this_backup_retain_snapshot = True
-            elif last_full_backup_idx >= full_interval - 1:
-                this_backup_incremental_parent = None
-                this_backup_retain_snapshot = True
-            else:
-                this_backup_incremental_parent = last_full_backup["datestring"]
-                this_backup_retain_snapshot = False
-        else:
-            # The very first ackup must be full to start the tree
-            this_backup_incremental_parent = None
-            this_backup_retain_snapshot = True
-
-        now = datetime.now()
-        datestring = now.strftime("%Y%m%d%H%M%S")
-        snapshot_name = f"ab{datestring}"
-
-        # Take the VM snapshot (vm.vm_worker_create_snapshot)
-        snap_list = list()
-
-        def cleanup_failure():
-            for snapshot in snap_list:
-                rbd, snapshot_name = snapshot.split("@")
-                pool, volume = rbd.split("/")
-                # We capture no output here, because if this fails too we're in a deep
-                # error chain and will just ignore it
-                ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
-
-        rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
-
-        for rbd in rbd_list:
-            current_stage += 1
-            update(
-                celery,
-                f"[{vm_name}] Creating RBD snapshot of {rbd}",
-                current=current_stage,
-                total=total_stages,
-            )
-
-            pool, volume = rbd.split("/")
-            ret, msg = ceph.add_snapshot(
-                zkhandler, pool, volume, snapshot_name, zk_only=False
-            )
-            if not ret:
-                cleanup_failure()
-                error_message = msg.replace("ERROR: ", "")
-                log_err(celery, error_message)
-                send_execution_failure_report(
-                    (celery, current_stage, total_stages),
-                    config,
-                    recipients=email_recipients,
-                    error=error_message,
-                )
-                fail(celery, error_message)
-                return False
-            else:
-                snap_list.append(f"{pool}/{volume}@{snapshot_name}")
-
-        current_stage += 1
-        update(
+        summary, current_stage = run_vm_backup(
+            zkhandler,
             celery,
-            f"[{vm_name}] Creating VM configuration snapshot",
-            current=current_stage,
-            total=total_stages,
+            current_stage,
+            total_stages,
+            config,
+            vm_detail,
+            force_full=force_full,
         )
-
-        # Get the current timestamp
-        tstart = time()
-
-        # Get the current domain XML
-        vm_config = zkhandler.read(("domain.xml", dom_uuid))
-
-        # Add the snapshot entry to Zookeeper
-        zkhandler.write(
-            [
-                (
-                    (
-                        "domain.snapshots",
-                        dom_uuid,
-                        "domain_snapshot.name",
-                        snapshot_name,
-                    ),
-                    snapshot_name,
-                ),
-                (
-                    (
-                        "domain.snapshots",
-                        dom_uuid,
-                        "domain_snapshot.timestamp",
-                        snapshot_name,
-                    ),
-                    tstart,
-                ),
-                (
-                    (
-                        "domain.snapshots",
-                        dom_uuid,
-                        "domain_snapshot.xml",
-                        snapshot_name,
-                    ),
-                    vm_config,
-                ),
-                (
-                    (
-                        "domain.snapshots",
-                        dom_uuid,
-                        "domain_snapshot.rbd_snapshots",
-                        snapshot_name,
-                    ),
-                    ",".join(snap_list),
-                ),
-            ]
-        )
-
-        # Export the snapshot (vm.vm_worker_export_snapshot)
-        export_target_path = f"{backup_suffixed_path}/{vm_name}/{snapshot_name}/images"
-
-        try:
-            makedirs(export_target_path)
-        except Exception as e:
-            error_message = (
-                f"[{vm_name}] Failed to create target directory '{export_target_path}': {e}",
-            )
-            log_err(celery, error_message)
-            send_execution_failure_report(
-                (celery, current_stage, total_stages),
-                config,
-                recipients=email_recipients,
-                error=error_message,
-            )
-            fail(celery, error_message)
-            return False
-
-        def export_cleanup():
-            from shutil import rmtree
-
-            rmtree(f"{backup_suffixed_path}/{vm_name}/{snapshot_name}")
-
-        export_type = (
-            "incremental" if this_backup_incremental_parent is not None else "full"
-        )
-
-        # Set the export filetype
-        if this_backup_incremental_parent is not None:
-            export_fileext = "rbddiff"
-        else:
-            export_fileext = "rbdimg"
-
-        failure = False
-        export_files = None
-        export_files_size = 0
-
-        def write_backup_summary(success=False, message=""):
-            export_details = {
-                "type": export_type,
-                "result": success,
-                "message": message,
-                "datestring": datestring,
-                "snapshot_name": snapshot_name,
-                "incremental_parent": this_backup_incremental_parent,
-                "vm_detail": vm_detail,
-                "export_files": export_files,
-                "export_size_bytes": export_files_size,
-            }
-            try:
-                with open(
-                    f"{backup_suffixed_path}/{vm_name}/{snapshot_name}/snapshot.json",
-                    "w",
-                ) as fh:
-                    jdump(export_details, fh)
-            except Exception as e:
-                log_err(celery, f"Error exporting snapshot details: {e}")
-                return False, e
-            return True, ""
-
-        snapshot_volumes = list()
-        for rbdsnap in snap_list:
-            pool, _volume = rbdsnap.split("/")
-            volume, name = _volume.split("@")
-            ret, snapshots = ceph.get_list_snapshot(
-                zkhandler, pool, volume, limit=name, is_fuzzy=False
-            )
-            if ret:
-                snapshot_volumes += snapshots
-
-        export_files = list()
-        for snapshot_volume in snapshot_volumes:
-            snap_pool = snapshot_volume["pool"]
-            snap_volume = snapshot_volume["volume"]
-            snap_snapshot_name = snapshot_volume["snapshot"]
-            snap_size = snapshot_volume["stats"]["size"]
-            snap_str = f"{snap_pool}/{snap_volume}@{snap_snapshot_name}"
-
-            current_stage += 1
-            update(
-                celery,
-                f"[{vm_name}] Exporting RBD snapshot {snap_str}",
-                current=current_stage,
-                total=total_stages,
-            )
-
-            if this_backup_incremental_parent is not None:
-                retcode, stdout, stderr = run_os_command(
-                    f"rbd export-diff --from-snap {this_backup_incremental_parent} {snap_pool}/{snap_volume}@{snap_snapshot_name} {export_target_path}/{snap_pool}.{snap_volume}.{export_fileext}"
-                )
-                if retcode:
-                    error_message = (
-                        f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
-                    )
-                    write_backup_summary(message=error_message)
-                    failure = True
-                    break
-                else:
-                    export_files.append(
-                        (
-                            f"images/{snap_pool}.{snap_volume}.{export_fileext}",
-                            snap_size,
-                        )
-                    )
-            else:
-                retcode, stdout, stderr = run_os_command(
-                    f"rbd export --export-format 2 {snap_pool}/{snap_volume}@{snap_snapshot_name} {export_target_path}/{snap_pool}.{snap_volume}.{export_fileext}"
-                )
-                if retcode:
-                    error_message = (
-                        f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
-                    )
-                    write_backup_summary(message=error_message)
-                    failure = True
-                    break
-                else:
-                    export_files.append(
-                        (
-                            f"images/{snap_pool}.{snap_volume}.{export_fileext}",
-                            snap_size,
-                        )
-                    )
-
-        if failure:
-            current_stage += 6
-            if not this_backup_retain_snapshot:
-                current_stage += len(snap_list)
-            update(
-                celery,
-                f"[{vm_name}] Error in snapshot export, skipping",
-                current=current_stage,
-                total=total_stages,
-            )
-            continue
-
-        current_stage += 1
-        update(
-            celery,
-            f"[{vm_name}] Writing snapshot details",
-            current=current_stage,
-            total=total_stages,
-        )
-
-        def get_dir_size(pathname):
-            total = 0
-            with scandir(pathname) as it:
-                for entry in it:
-                    if entry.is_file():
-                        total += entry.stat().st_size
-                    elif entry.is_dir():
-                        total += get_dir_size(entry.path)
-            return total
-
-        export_files_size = get_dir_size(export_target_path)
-
-        ret, e = write_backup_summary(success=True)
-        if not ret:
-            error_message = (
-                f"[{vm_name}] Failed to export configuration snapshot: {e}",
-            )
-            write_backup_summary(message=error_message)
-            current_stage += 5
-            if not this_backup_retain_snapshot:
-                current_stage += len(snap_list)
-            update(
-                celery,
-                error_message,
-                current=current_stage,
-                total=total_stages,
-            )
-            continue
-
-        # Clean up the snapshot (vm.vm_worker_remove_snapshot)
-        if not this_backup_retain_snapshot:
-            for snap in snap_list:
-                current_stage += 1
-                update(
-                    celery,
-                    f"[{vm_name}] Removing RBD snapshot {snap}",
-                    current=current_stage,
-                    total=total_stages,
-                )
-
-                rbd, name = snap.split("@")
-                pool, volume = rbd.split("/")
-                ret, msg = ceph.remove_snapshot(zkhandler, pool, volume, name)
-                if not ret:
-                    error_message = msg.replace("ERROR: ", "")
-                    write_backup_summary(message=error_message)
-                    failure = True
-                    break
-
-            if failure:
-                current_stage += 4
-                update(
-                    celery,
-                    f"[{vm_name}] Error in snapshot export, skipping",
-                    current=current_stage,
-                    total=total_stages,
-                )
-                continue
-
-            current_stage += 1
-            update(
-                celery,
-                f"[{vm_name}] Removing VM configuration snapshot",
-                current=current_stage,
-                total=total_stages,
-            )
-
-            ret = zkhandler.delete(
-                ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
-            )
-            if not ret:
-                error_message = (
-                    f"[{vm_name}] Failed to remove VM snapshot; continuing",
-                )
-                log_err(celery, error_message)
-
-        current_stage += 1
-        update(
-            celery,
-            f"Finding obsolete incremental backups for '{vm_name}'",
-            current=current_stage,
-            total=total_stages,
-        )
-
-        # Read export file to get details
-        backup_json_file = f"{vm_backup_path}/{snapshot_name}/snapshot.json"
-        with open(backup_json_file) as fh:
-            backup_json = jload(fh)
-        tracked_backups.insert(0, backup_json)
-
-        marked_for_deletion = list()
-        # Find any full backups that are expired
-        found_full_count = 0
-        for backup in tracked_backups:
-            if backup["type"] == "full":
-                found_full_count += 1
-                if found_full_count > full_retention:
-                    marked_for_deletion.append(backup)
-        # Find any incremental backups that depend on marked parents
-        for backup in tracked_backups:
-            if backup["type"] == "incremental" and backup["incremental_parent"] in [
-                b["datestring"] for b in marked_for_deletion
-            ]:
-                marked_for_deletion.append(backup)
-
-        current_stage += 1
-        if len(marked_for_deletion) > 0:
-            update(
-                celery,
-                f"Cleaning up aged out backups for '{vm_name}'",
-                current=current_stage,
-                total=total_stages,
-            )
-
-            for backup_to_delete in marked_for_deletion:
-                ret = vm.vm_worker_remove_snapshot(
-                    zkhandler, None, vm_name, backup_to_delete["snapshot_name"]
-                )
-                if ret is False:
-                    error_message = f"Failed to remove obsolete backup snapshot '{backup_to_delete['snapshot_name']}', leaving in tracked backups"
-                    log_err(celery, error_message)
-                else:
-                    rmtree(f"{vm_backup_path}/{backup_to_delete['snapshot_name']}")
-                    tracked_backups.remove(backup_to_delete)
-
-        current_stage += 1
-        update(
-            celery,
-            "Updating tracked backups",
-            current=current_stage,
-            total=total_stages,
-        )
-        state_data["tracked_backups"] = tracked_backups
-        with open(autobackup_state_file, "w") as fh:
-            jdump(state_data, fh)
-
-        backup_summary[vm_detail["name"]] = tracked_backups
+        backup_summary[vm_detail["name"]] = summary
 
     # Handle automount unmount commands
     if config["auto_mount_enabled"]:
