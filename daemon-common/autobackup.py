@@ -329,7 +329,7 @@ def worker_cluster_autobackup(
 
         now = datetime.now()
         datestring = now.strftime("%Y%m%d%H%M%S")
-        snapshot_name = f"backup_{datestring}"
+        snapshot_name = f"ab{datestring}"
 
         # Take the VM snapshot (vm.vm_worker_create_snapshot)
         snap_list = list()
