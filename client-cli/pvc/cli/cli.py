@@ -2168,9 +2168,17 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     is_flag=True,
     default=True,
     show_default=True,
-    help="Wait or don't wait for task to complete, showing progress if waiting",
+    help="Wait or don't wait for task to complete, showing progress if waiting.",
 )
-def cli_vm_autobackup(email_report, force_full_flag, wait_flag):
+@click.option(
+    "--cron",
+    "cron_flag",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Run in cron mode (equivalent to '--no-wait').",
+)
+def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
     """
     Perform automated backups of VMs, with integrated cleanup and full/incremental scheduling.
 
@@ -2195,6 +2203,9 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag):
     The "--force-full" option can be used to force all configured VMs to perform a "full" level backup this run,
     which can help synchronize the backups of existing VMs with new ones.
     """
+
+    if cron_flag:
+        wait_flag = False
 
     if email_report is not None:
         email_recipients = email_report.split(",")
