@@ -731,13 +731,15 @@ def worker_cluster_autobackup(
     autobackup_end_time = datetime.now()
     autobackup_total_time = autobackup_end_time - autobackup_start_time
 
-    send_execution_summary_report(
-        (celery, current_stage, total_stages),
-        config,
-        recipients=email_recipients,
-        total_time=autobackup_total_time,
-        summary=backup_summary,
-    )
+    if email_recipients is not None:
+        send_execution_summary_report(
+            (celery, current_stage, total_stages),
+            config,
+            recipients=email_recipients,
+            total_time=autobackup_total_time,
+            summary=backup_summary,
+        )
+        current_stage += 1
 
     current_stage += 1
     return finish(
