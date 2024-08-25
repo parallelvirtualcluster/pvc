@@ -2196,9 +2196,14 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag):
     which can help synchronize the backups of existing VMs with new ones.
     """
 
+    if email_report is not None:
+        email_recipients = email_report.split(",")
+    else:
+        email_recipients = None
+
     retcode, retmsg = pvc.lib.vm.vm_autobackup(
         CLI_CONFIG,
-        email_recipients=email_report,
+        email_recipients=email_recipients,
         force_full_flag=force_full_flag,
         wait_flag=wait_flag,
     )
