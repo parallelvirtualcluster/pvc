@@ -118,7 +118,7 @@ def send_execution_summary_report(
     email.append("")
 
     email.append(
-        f"A PVC autobackup has been completed at {current_datetime} in {total_time}s."
+        f"A PVC autobackup has been completed at {current_datetime} in {total_time}."
     )
     email.append("")
     email.append(
@@ -462,6 +462,33 @@ def worker_cluster_autobackup(
         else:
             export_fileext = "rbdimg"
 
+        failure = False
+        export_files = None
+        export_files_size = 0
+
+        def write_backup_summary(success=False, message=""):
+            export_details = {
+                "type": export_type,
+                "result": success,
+                "message": message,
+                "datestring": datestring,
+                "snapshot_name": snapshot_name,
+                "incremental_parent": this_backup_incremental_parent,
+                "vm_detail": vm_detail,
+                "export_files": export_files,
+                "export_size_bytes": export_files_size,
+            }
+            try:
+                with open(
+                    f"{backup_suffixed_path}/{vm_name}/{snapshot_name}/snapshot.json",
+                    "w",
+                ) as fh:
+                    jdump(export_details, fh)
+            except Exception as e:
+                log_err(celery, f"Error exporting snapshot details: {e}")
+                return False, e
+            return True, ""
+
         snapshot_volumes = list()
         for rbdsnap in snap_list:
             pool, _volume = rbdsnap.split("/")
@@ -496,15 +523,9 @@ def worker_cluster_autobackup(
                     error_message = (
                         f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
                     )
-                    log_err(celery, error_message)
-                    send_execution_failure_report(
-                        (celery, current_stage, total_stages),
-                        config,
-                        recipients=email_recipients,
-                        error=error_message,
-                    )
-                    fail(celery, error_message)
-                    return False
+                    write_backup_summary(message=error_message)
+                    failure = True
+                    break
                 else:
                     export_files.append(
                         (
@@ -520,15 +541,9 @@ def worker_cluster_autobackup(
                     error_message = (
                         f"[{vm_name}] Failed to export snapshot for volume(s) '{snap_pool}/{snap_volume}'",
                     )
-                    log_err(celery, error_message)
-                    send_execution_failure_report(
-                        (celery, current_stage, total_stages),
-                        config,
-                        recipients=email_recipients,
-                        error=error_message,
-                    )
-                    fail(celery, error_message)
-                    return False
+                    write_backup_summary(message=error_message)
+                    failure = True
+                    break
                 else:
                     export_files.append(
                         (
@@ -536,6 +551,18 @@ def worker_cluster_autobackup(
                             snap_size,
                         )
                     )
+
+        if failure:
+            current_stage += 6
+            if not this_backup_retain_snapshot:
+                current_stage += len(snap_list)
+            update(
+                celery,
+                f"[{vm_name}] Error in snapshot export, skipping",
+                current=current_stage,
+                total=total_stages,
+            )
+            continue
 
         current_stage += 1
         update(
@@ -557,33 +584,22 @@ def worker_cluster_autobackup(
 
         export_files_size = get_dir_size(export_target_path)
 
-        export_details = {
-            "type": export_type,
-            "datestring": datestring,
-            "snapshot_name": snapshot_name,
-            "incremental_parent": this_backup_incremental_parent,
-            "vm_detail": vm_detail,
-            "export_files": export_files,
-            "export_size_bytes": export_files_size,
-        }
-        try:
-            with open(
-                f"{backup_suffixed_path}/{vm_name}/{snapshot_name}/snapshot.json", "w"
-            ) as fh:
-                jdump(export_details, fh)
-        except Exception as e:
+        ret, e = write_backup_summary(success=True)
+        if not ret:
             error_message = (
                 f"[{vm_name}] Failed to export configuration snapshot: {e}",
             )
-            log_err(celery, error_message)
-            send_execution_failure_report(
-                (celery, current_stage, total_stages),
-                config,
-                recipients=email_recipients,
-                error=error_message,
+            write_backup_summary(message=error_message)
+            current_stage += 5
+            if not this_backup_retain_snapshot:
+                current_stage += len(snap_list)
+            update(
+                celery,
+                error_message,
+                current=current_stage,
+                total=total_stages,
             )
-            fail(celery, error_message)
-            return False
+            continue
 
         # Clean up the snapshot (vm.vm_worker_remove_snapshot)
         if not this_backup_retain_snapshot:
@@ -601,15 +617,19 @@ def worker_cluster_autobackup(
                 ret, msg = ceph.remove_snapshot(zkhandler, pool, volume, name)
                 if not ret:
                     error_message = msg.replace("ERROR: ", "")
-                    log_err(celery, error_message)
-                    send_execution_failure_report(
-                        (celery, current_stage, total_stages),
-                        config,
-                        recipients=email_recipients,
-                        error=error_message,
-                    )
-                    fail(celery, error_message)
-                    return False
+                    write_backup_summary(message=error_message)
+                    failure = True
+                    break
+
+            if failure:
+                current_stage += 4
+                update(
+                    celery,
+                    f"[{vm_name}] Error in snapshot export, skipping",
+                    current=current_stage,
+                    total=total_stages,
+                )
+                continue
 
             current_stage += 1
             update(
@@ -624,17 +644,9 @@ def worker_cluster_autobackup(
             )
             if not ret:
                 error_message = (
-                    f"[{vm_name}] Failed to remove snapshot from Zookeeper",
+                    f"[{vm_name}] Failed to remove VM snapshot; continuing",
                 )
                 log_err(celery, error_message)
-                send_execution_failure_report(
-                    (celery, current_stage, total_stages),
-                    config,
-                    recipients=email_recipients,
-                    error=error_message,
-                )
-                fail(celery, error_message)
-                return False
 
         current_stage += 1
         update(
