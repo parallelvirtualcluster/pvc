@@ -88,7 +88,8 @@ for HOST in ${HOSTS[@]}; do
     echo " done."
     if [[ -n ${PRIMARY_NODE} && ${PRIMARY_NODE} == ${HOST} ]]; then
         echo -n ">>> "
-        ssh $HOST pvc -q node primary
+        ssh $HOST pvc -q node primary --wait
+        ssh $HOST $SUDO systemctl restart pvcworkerd &>/dev/null
     fi
 done
 
