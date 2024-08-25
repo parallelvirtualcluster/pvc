@@ -2235,7 +2235,7 @@ def vm_worker_remove_snapshot(
     override_total_stages=1,
 ):
     # This allows these to be called inside another run while still updating celery
-    current_stage = override_total_stages
+    current_stage = override_current_stage
     total_stages = override_total_stages
     start(
         celery,
