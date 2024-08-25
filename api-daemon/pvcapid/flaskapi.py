@@ -3559,10 +3559,14 @@ class API_VM_Autobackup_Root(Resource):
               id: Message
         """
 
+        email_recipients = reqargs.get("email_recipients", None)
+        if email_recipients is not None and not isinstance(email_recipients, list):
+            email_recipients = [email_recipients]
+
         task = run_celery_task(
             "cluster.autobackup",
             force_full=reqargs.get("force_full", False),
-            email_recipients=reqargs.get("email_recipients", None),
+            email_recipients=email_recipients,
             run_on="primary",
         )
         return (
