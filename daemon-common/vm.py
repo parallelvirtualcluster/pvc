@@ -2266,7 +2266,7 @@ def vm_worker_remove_snapshot(
         current_stage += 1
         update(
             celery,
-            f"Removing RBD snapshot {snap}",
+            f"Removing {snap}",
             current=current_stage,
             total=total_stages,
         )
@@ -2356,7 +2356,7 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
         current_stage += 1
         update(
             celery,
-            f"Rolling back RBD snapshot {snap}",
+            f"Rolling back to {snap}",
             current=current_stage,
             total=total_stages,
         )
@@ -2564,7 +2564,7 @@ def vm_worker_export_snapshot(
         current_stage += 1
         update(
             celery,
-            f"Exporting RBD snapshot {snap}",
+            f"Exporting {snap}",
             current=current_stage,
             total=total_stages,
         )
@@ -2791,7 +2791,7 @@ def vm_worker_import_snapshot(
             current_stage += 1
             update(
                 celery,
-                f"Importing RBD snapshot {pool}/{volume}@{incremental_parent}",
+                f"Importing {pool}/{volume}@{incremental_parent}",
                 current=current_stage,
                 total=total_stages,
             )
@@ -2868,7 +2868,7 @@ def vm_worker_import_snapshot(
             current_stage += 1
             update(
                 celery,
-                f"Importing RBD snapshot {pool}/{volume}@{snapshot_name}",
+                f"Importing {pool}/{volume}@{snapshot_name}",
                 current=current_stage,
                 total=total_stages,
             )
@@ -3021,7 +3021,7 @@ def vm_worker_import_snapshot(
             current_stage += 1
             update(
                 celery,
-                f"Importing RBD snapshot {pool}/{volume}@{snapshot_name}",
+                f"Importing {pool}/{volume}@{snapshot_name}",
                 current=current_stage,
                 total=total_stages,
             )
