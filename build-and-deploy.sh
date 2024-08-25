@@ -87,9 +87,10 @@ for HOST in ${HOSTS[@]}; do
     done
     echo " done."
     if [[ -n ${PRIMARY_NODE} && ${PRIMARY_NODE} == ${HOST} ]]; then
-        echo -n ">>> "
-        ssh $HOST pvc -q node primary --wait
+        echo -n ">>> Setting node $HOST to primary coordinator state... "
+        ssh $HOST pvc -q node primary --wait &>/dev/null
         ssh $HOST $SUDO systemctl restart pvcworkerd &>/dev/null
+        echo "done."
     fi
 done
 
