@@ -13,12 +13,17 @@ else
 fi
 
 KEEP_ARTIFACTS=""
+API_ONLY=""
 PRIMARY_NODE=""
 if [[ -n ${1} ]]; then
     for arg in ${@}; do
         case ${arg} in
             -k|--keep)
                 KEEP_ARTIFACTS="y"
+                shift
+            ;;
+            -a|--api-only)
+                API_ONLY="y"
                 shift
             ;;
             -p=*|--become-primary=*)
@@ -75,6 +80,7 @@ for HOST in ${HOSTS[@]}; do
     ssh $HOST $SUDO systemctl restart pvcapid &>/dev/null
     sleep 2
     ssh $HOST $SUDO systemctl restart pvcworkerd &>/dev/null
+    if [[ -z ${API_ONLY} ]]; then
     sleep 2
     ssh $HOST $SUDO systemctl restart pvchealthd &>/dev/null
     sleep 2
@@ -85,6 +91,7 @@ for HOST in ${HOSTS[@]}; do
         sleep 5
         echo -n "."
     done
+    fi
     echo " done."
     if [[ -n ${PRIMARY_NODE} && ${PRIMARY_NODE} == ${HOST} ]]; then
         echo -n ">>> Setting node $HOST to primary coordinator state... "
