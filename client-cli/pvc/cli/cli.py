@@ -725,6 +725,33 @@ def cli_node():
 
 
 ###############################################################################
+# > pvc node is-primary
+###############################################################################
+@click.command(
+    name="is-primary",
+    short_help="Check if this node is primary coordinator.",
+)
+@connection_req
+@click.argument("node", default=DEFAULT_NODE_HOSTNAME)
+def cli_node_is_primary(
+    node,
+):
+    """
+    Check if NODE (or this node if unset) is the current primary coordinator.
+
+    Designed for scripting; returns no visible data, but the return code is 0 if the node
+    is primary, and 1 if it is not.
+    """
+
+    _, primary_node = pvc.lib.cluster.get_primary_node(CLI_CONFIG)
+
+    if primary_node == node:
+        exit(0)
+    else:
+        exit(1)
+
+
+###############################################################################
 # > pvc node primary
 ###############################################################################
 @click.command(
@@ -6525,6 +6552,7 @@ def cli(
 # Click command tree
 ###############################################################################
 
+cli_node.add_command(cli_node_is_primary)
 cli_node.add_command(cli_node_primary)
 cli_node.add_command(cli_node_secondary)
 cli_node.add_command(cli_node_flush)
