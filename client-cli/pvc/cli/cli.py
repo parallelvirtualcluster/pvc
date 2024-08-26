@@ -2190,8 +2190,10 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
 
     This command should be run from cron or a timer at a regular interval (e.g. daily, hourly, etc.) which defines
     how often backups are taken. Backup format (full/incremental) and retention is based only on the number of
-    recorded backups, not on the time interval between them. Backups taken manually outside of the "autobackup"
+    recorded backups, not on the time interval between them. Exports taken manually outside of the "autobackup"
     command are not counted towards the format or retention of autobackups.
+
+    WARNING: Running this command manually will interfere with the schedule! Do not run manually except for testing.
 
     The actual details of the autobackup, including retention policies, full-vs-incremental, pre- and post- run
     mounting/unmounting commands, etc. are defined in the main PVC configuration file `/etc/pvc/pvc.conf`. See
