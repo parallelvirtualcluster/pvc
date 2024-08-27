@@ -30,6 +30,9 @@ from kazoo.client import KazooClient, KazooState
 from kazoo.exceptions import NoNodeError
 
 
+SCHEMA_ROOT_PATH = "/usr/share/pvc/daemon_lib/migrations/versions"
+
+
 #
 # Function decorators
 #
@@ -869,7 +872,7 @@ class ZKSchema(object):
         if not quiet:
             print(f"Loading schema version {version}")
 
-        with open(f"daemon_lib/migrations/versions/{version}.json", "r") as sfh:
+        with open(f"{SCHEMA_ROOT_PATH}/{version}.json", "r") as sfh:
             self.schema = json.load(sfh)
             self.version = self.schema.get("version")
 
@@ -1218,7 +1221,7 @@ class ZKSchema(object):
     # Write the latest schema to a file
     @classmethod
     def write(cls):
-        schema_file = "daemon_lib/migrations/versions/{}.json".format(cls._version)
+        schema_file = f"{SCHEMA_ROOT_PATH}/{cls._version}.json"
         with open(schema_file, "w") as sfh:
             json.dump(cls._schema, sfh)
 
@@ -1226,7 +1229,7 @@ class ZKSchema(object):
     @staticmethod
     def find_all(start=0, end=None):
         versions = list()
-        for version in os.listdir("daemon_lib/migrations/versions"):
+        for version in os.listdir(SCHEMA_ROOT_PATH):
             sequence_id = int(version.split(".")[0])
             if end is None:
                 if sequence_id > start:
@@ -1242,7 +1245,7 @@ class ZKSchema(object):
     @staticmethod
     def find_latest():
         latest_version = 0
-        for version in os.listdir("daemon_lib/migrations/versions"):
+        for version in os.listdir(SCHEMA_ROOT_PATH):
             sequence_id = int(version.split(".")[0])
             if sequence_id > latest_version:
                 latest_version = sequence_id
