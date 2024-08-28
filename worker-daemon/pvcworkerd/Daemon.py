@@ -52,7 +52,7 @@ from daemon_lib.autobackup import (
 )
 
 # Daemon version
-version = "0.9.98"
+version = "0.9.99"
 
 
 config = cfg.get_configuration()

@@ -1,5 +1,27 @@
 ## PVC Changelog
 
+###### [v0.9.99](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.99)
+
+  **Deprecation Warning**: `pvc vm backup` commands are now deprecated and will be removed in **0.9.100**. Use `pvc vm snapshot` commands instead.
+  **Breaking Change**: The on-disk format of VM snapshot exports differs from backup exports, and the PVC autobackup system now leverages these. It is recommended to start fresh with a new tree of backups for `pvc autobackup` for maximum compatibility.
+  **Breaking Change**: VM autobackups now run in `pvcworkerd` instead of the CLI client directly, allowing them to be triggerd from any node (or externally). It is important to apply the timer unit changes from the `pvc-ansible` role after upgrading to 0.9.99 to avoid duplicate runs.
+  **Usage Note**: VM snapshots are displayed in the `pvc vm list` and `pvc vm info` outputs, not in a unique "list" endpoint.
+
+  * [API Daemon] Adds a proper error when an invalid provisioner profile is specified
+  * [Node Daemon] Sorts Ceph pools properly in node keepalive to avoid incorrect ordering
+  * [Health Daemon] Improves handling of IPMI checks by adding multiple tries but a shorter timeout
+  * [API Daemon] Improves handling of XML parsing errors in VM configurations
+  * [ALL] Adds support for whole VM snapshots, including configuration XML details, and direct rollback to snapshots
+  * [ALL] Adds support for exporting and importing whole VM snapshots
+  * [Client CLI] Removes vCPU topology from short VM info output
+  * [Client CLI] Improves output format of VM info output
+  * [API Daemon] Adds an endpoint to get the current primary node
+  * [Client CLI] Fixes a bug where API requests were made 3 times
+  * [Other] Improves the build-and-deploy.sh script
+  * [API Daemon] Improves the "vm rename" command to avoid redefining VM, preserving history etc.
+  * [API Daemon] Adds an indication when a task is run on the primary node
+  * [API Daemon] Fixes a bug where the ZK schema relative path didn't work sometimes
+
 ###### [v0.9.98](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.98)
 
   * [CLI Client] Fixed output when API call times out
