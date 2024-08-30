@@ -1,5 +1,11 @@
 ## PVC Changelog
 
+###### [v0.9.100](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.100)
+
+  * [API Daemon] Improves the handling of "detect:" disk strings on newer systems by leveraging the "nvme" command
+  * [Client CLI] Update help text about "detect:" disk strings
+  * [Meta] Updates deprecation warnings and updates builder to only add this version for Debian 12 (Bookworm)
+
 ###### [v0.9.99](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.99)
 
   **Deprecation Warning**: `pvc vm backup` commands are now deprecated and will be removed in a future version. Use `pvc vm snapshot` commands instead.

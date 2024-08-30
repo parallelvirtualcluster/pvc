@@ -1,3 +1,11 @@
+pvc (0.9.100-0) unstable; urgency=high
+
+  * [API Daemon] Improves the handling of "detect:" disk strings on newer systems by leveraging the "nvme" command
+  * [Client CLI] Update help text about "detect:" disk strings
+  * [Meta] Updates deprecation warnings and updates builder to only add this version for Debian 12 (Bookworm)
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 30 Aug 2024 11:03:33 -0400
+
 pvc (0.9.99-0) unstable; urgency=high
 
   **Deprecation Warning**: `pvc vm backup` commands are now deprecated and will be removed in **0.9.100**. Use `pvc vm snapshot` commands instead.
