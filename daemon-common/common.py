@@ -26,6 +26,7 @@ import subprocess
 import signal
 from json import loads
 from re import match as re_match
+from re import search as re_search
 from re import split as re_split
 from re import sub as re_sub
 from difflib import unified_diff
@@ -1073,7 +1074,7 @@ def sortInterfaceNames(interface_names):
 #
 # Parse a "detect" device into a real block device name
 #
-def get_detect_device(detect_string):
+def get_detect_device_lsscsi(detect_string):
     """
     Parses a "detect:" string into a normalized block device path using lsscsi.
 
@@ -1140,3 +1141,96 @@ def get_detect_device(detect_string):
             break
 
     return blockdev
+
+
+def get_detect_device_nvme(detect_string):
+    """
+    Parses a "detect:" string into a normalized block device path using nvme.
+
+    A detect string is formatted "detect:<NAME>:<SIZE>:<ID>", where
+    NAME is some unique identifier in lsscsi, SIZE is a human-readable
+    size value to within +/- 3% of the real size of the device, and
+    ID is the Nth (0-indexed) matching entry of that NAME and SIZE.
+    """
+
+    unit_map = {
+        "kB": 1000,
+        "MB": 1000 * 1000,
+        "GB": 1000 * 1000 * 1000,
+        "TB": 1000 * 1000 * 1000 * 1000,
+        "PB": 1000 * 1000 * 1000 * 1000 * 1000,
+        "EB": 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    }
+
+    _, name, _size, idd = detect_string.split(":")
+    if _ != "detect":
+        return None
+
+    size_re = re_search(r"(\d+)([kKMGTP]B)", _size)
+    size_val = float(size_re.group(1))
+    size_unit = size_re.group(2)
+    size_bytes = int(size_val * unit_map[size_unit])
+
+    retcode, stdout, stderr = run_os_command("nvme list --output-format json")
+    if retcode:
+        print(f"Failed to run nvme: {stderr}")
+        return None
+
+    # Parse the output with json
+    nvme_data = loads(stdout).get("Devices", list())
+
+    # Handle size determination (+/- 3%)
+    size = None
+    nvme_sizes = set()
+    for entry in nvme_data:
+        nvme_sizes.add(entry["PhysicalSize"])
+    for l_size in nvme_sizes:
+        plusthreepct = size_bytes * 1.03
+        minusthreepct = size_bytes * 0.97
+
+        if l_size > minusthreepct and l_size < plusthreepct:
+            size = l_size
+            break
+    if size is None:
+        return None
+
+    blockdev = None
+    matches = list()
+    for entry in nvme_data:
+        # Skip if name is not contained in the line (case-insensitive)
+        if name.lower() not in entry["ModelNumber"].lower():
+            continue
+        # Skip if the size does not match
+        if size != entry["PhysicalSize"]:
+            continue
+        # Get our blockdev and append to the list
+        matches.append(entry["DevicePath"])
+
+    blockdev = None
+    # Find the blockdev at index {idd}
+    for idx, _blockdev in enumerate(matches):
+        if int(idx) == int(idd):
+            blockdev = _blockdev
+            break
+
+    return blockdev
+
+
+def get_detect_device(detect_string):
+    """
+    Parses a "detect:" string into a normalized block device path.
+
+    First tries to parse using "lsscsi" (get_detect_device_lsscsi). If this returns an invalid
+    block device name, then try to parse using "nvme" (get_detect_device_nvme). This works around
+    issues with more recent devices (e.g. the Dell R6615 series) not properly reporting block
+    device paths for NVMe devices with "lsscsi".
+    """
+
+    device = get_detect_device_lsscsi(detect_string)
+    if device is None or not re_match(r"^/dev", device):
+        device = get_detect_device_nvme(detect_string)
+
+    if device is not None and re_match(r"^/dev", device):
+        return device
+    else:
+        return None
