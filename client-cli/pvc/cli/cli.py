@@ -2028,7 +2028,7 @@ def cli_vm_snapshot_import(
 )
 def cli_vm_backup():
     """
-    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in a future version.
 
     Manage backups of VMs in a PVC cluster.
     """
@@ -2059,7 +2059,7 @@ def cli_vm_backup():
 )
 def cli_vm_backup_create(domain, backup_path, incremental_parent, retain_snapshot):
     """
-    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in a future version.
 
     Create a backup of virtual machine DOMAIN to BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
@@ -2107,7 +2107,7 @@ def cli_vm_backup_create(domain, backup_path, incremental_parent, retain_snapsho
 )
 def cli_vm_backup_restore(domain, backup_datestring, backup_path, retain_snapshot):
     """
-    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in a future version.
 
     Restore the backup BACKUP_DATESTRING of virtual machine DOMAIN stored in BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
@@ -2147,7 +2147,7 @@ def cli_vm_backup_restore(domain, backup_datestring, backup_path, retain_snapsho
 @click.argument("backup_path")
 def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     """
-    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in PVC 0.9.100.
+    DEPRECATED: Use 'pvc vm snapshot' commands instead. 'pvc vm backup' commands will be removed in a future version.
 
     Remove the backup BACKUP_DATESTRING, including snapshots, of virtual machine DOMAIN stored in BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 

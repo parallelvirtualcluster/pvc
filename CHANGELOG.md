@@ -2,7 +2,7 @@
 
 ###### [v0.9.99](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.99)
 
-  **Deprecation Warning**: `pvc vm backup` commands are now deprecated and will be removed in **0.9.100**. Use `pvc vm snapshot` commands instead.
+  **Deprecation Warning**: `pvc vm backup` commands are now deprecated and will be removed in a future version. Use `pvc vm snapshot` commands instead.
   **Breaking Change**: The on-disk format of VM snapshot exports differs from backup exports, and the PVC autobackup system now leverages these. It is recommended to start fresh with a new tree of backups for `pvc autobackup` for maximum compatibility.
   **Breaking Change**: VM autobackups now run in `pvcworkerd` instead of the CLI client directly, allowing them to be triggerd from any node (or externally). It is important to apply the timer unit changes from the `pvc-ansible` role after upgrading to 0.9.99 to avoid duplicate runs.
   **Usage Note**: VM snapshots are displayed in the `pvc vm list` and `pvc vm info` outputs, not in a unique "list" endpoint.
