@@ -1166,7 +1166,7 @@ def get_detect_device_nvme(detect_string):
     if _ != "detect":
         return None
 
-    size_re = re_search(r"(\d+)([kKMGTP]B)", _size)
+    size_re = re_search(r"([\d.]+)([kKMGTP]B)", _size)
     size_val = float(size_re.group(1))
     size_unit = size_re.group(2)
     size_bytes = int(size_val * unit_map[size_unit])
