@@ -1997,6 +1997,22 @@ def ceph_volume_list(zkhandler, pool=None, limit=None, is_fuzzy=True):
 
 
 @ZKConnection(config)
+def ceph_volume_scan(zkhandler, pool, name):
+    """
+    (Re)scan a Ceph RBD volume for stats in the PVC Ceph storage cluster.
+    """
+    retflag, retdata = pvc_ceph.scan_volume(zkhandler, pool, name)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
 def ceph_volume_add(zkhandler, pool, name, size, force_flag=False):
     """
     Add a Ceph RBD volume to the PVC Ceph storage cluster.

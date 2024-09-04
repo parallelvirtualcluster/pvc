@@ -560,7 +560,21 @@ def getVolumeInformation(zkhandler, pool, volume):
     return volume_information
 
 
-def add_volume(zkhandler, pool, name, size, force_flag=False):
+def scan_volume(zkhandler, pool, name):
+    retcode, stdout, stderr = common.run_os_command(
+        "rbd info --format json {}/{}".format(pool, name)
+    )
+    volstats = stdout
+
+    # 3. Add the new volume to Zookeeper
+    zkhandler.write(
+        [
+            (("volume.stats", f"{pool}/{name}"), volstats),
+        ]
+    )
+
+
+def add_volume(zkhandler, pool, name, size, force_flag=False, zk_only=False):
     # 1. Verify the size of the volume
     pool_information = getPoolInformation(zkhandler, pool)
     size_bytes = format_bytes_fromhuman(size)
@@ -592,26 +606,27 @@ def add_volume(zkhandler, pool, name, size, force_flag=False):
         )
 
     # 2. Create the volume
-    retcode, stdout, stderr = common.run_os_command(
-        "rbd create --size {}B {}/{}".format(size_bytes, pool, name)
-    )
-    if retcode:
-        return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(name, stderr)
-
-    # 2. Get volume stats
-    retcode, stdout, stderr = common.run_os_command(
-        "rbd info --format json {}/{}".format(pool, name)
-    )
-    volstats = stdout
+    # zk_only flag skips actually creating the volume - this would be done by some other mechanism
+    if not zk_only:
+        retcode, stdout, stderr = common.run_os_command(
+            "rbd create --size {}B {}/{}".format(size_bytes, pool, name)
+        )
+        if retcode:
+            return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(
+                name, stderr
+            )
 
     # 3. Add the new volume to Zookeeper
     zkhandler.write(
         [
             (("volume", f"{pool}/{name}"), ""),
-            (("volume.stats", f"{pool}/{name}"), volstats),
+            (("volume.stats", f"{pool}/{name}"), ""),
             (("snapshot", f"{pool}/{name}"), ""),
         ]
     )
+
+    # 4. Scan the volume stats
+    scan_volume(zkhandler, pool, name)
 
     return True, 'Created RBD volume "{}" of size "{}" in pool "{}".'.format(
         name, format_bytes_tohuman(size_bytes), pool
@@ -662,20 +677,17 @@ def clone_volume(zkhandler, pool, name_src, name_new, force_flag=False):
             ),
         )
 
-    # 3. Get volume stats
-    retcode, stdout, stderr = common.run_os_command(
-        "rbd info --format json {}/{}".format(pool, name_new)
-    )
-    volstats = stdout
-
-    # 4. Add the new volume to Zookeeper
+    # 3. Add the new volume to Zookeeper
     zkhandler.write(
         [
             (("volume", f"{pool}/{name_new}"), ""),
-            (("volume.stats", f"{pool}/{name_new}"), volstats),
+            (("volume.stats", f"{pool}/{name_new}"), ""),
             (("snapshot", f"{pool}/{name_new}"), ""),
         ]
     )
+
+    # 4. Scan the volume stats
+    scan_volume(zkhandler, pool, name_new)
 
     return True, 'Cloned RBD volume "{}" to "{}" in pool "{}"'.format(
         name_src, name_new, pool
@@ -761,20 +773,8 @@ def resize_volume(zkhandler, pool, name, size, force_flag=False):
         except Exception:
             pass
 
-    # 4. Get volume stats
-    retcode, stdout, stderr = common.run_os_command(
-        "rbd info --format json {}/{}".format(pool, name)
-    )
-    volstats = stdout
-
-    # 5. Update the volume in Zookeeper
-    zkhandler.write(
-        [
-            (("volume", f"{pool}/{name}"), ""),
-            (("volume.stats", f"{pool}/{name}"), volstats),
-            (("snapshot", f"{pool}/{name}"), ""),
-        ]
-    )
+    # 4. Scan the volume stats
+    scan_volume(zkhandler, pool, name)
 
     return True, 'Resized RBD volume "{}" to size "{}" in pool "{}".'.format(
         name, format_bytes_tohuman(size_bytes), pool
@@ -807,18 +807,8 @@ def rename_volume(zkhandler, pool, name, new_name):
         ]
     )
 
-    # 3. Get volume stats
-    retcode, stdout, stderr = common.run_os_command(
-        "rbd info --format json {}/{}".format(pool, new_name)
-    )
-    volstats = stdout
-
-    # 4. Update the volume stats in Zookeeper
-    zkhandler.write(
-        [
-            (("volume.stats", f"{pool}/{new_name}"), volstats),
-        ]
-    )
+    # 3. Scan the volume stats
+    scan_volume(zkhandler, pool, new_name)
 
     return True, 'Renamed RBD volume "{}" to "{}" in pool "{}".'.format(
         name, new_name, pool

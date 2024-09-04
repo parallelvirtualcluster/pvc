@@ -6461,6 +6461,41 @@ api.add_resource(
 )
 
 
+# /storage/ceph/volume/<pool>/<volume>/scan
+class API_Storage_Ceph_Volume_Element_Scan(Resource):
+    @Authenticator
+    def post(self, pool, volume):
+        """
+        Scan a Ceph volume {volume} in pool {pool} for stats (after import)
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.ceph_volume_scan(pool, volume)
+
+
+api.add_resource(
+    API_Storage_Ceph_Volume_Element_Scan, "/storage/ceph/volume/<pool>/<volume>/scan"
+)
+
+
 # /storage/ceph/volume/<pool>/<volume>/clone
 class API_Storage_Ceph_Volume_Element_Clone(Resource):
     @RequestParser(
