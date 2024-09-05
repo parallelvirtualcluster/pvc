@@ -83,6 +83,37 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
     total_volumes = data.get("volumes", 0)
     total_snapshots = data.get("snapshots", 0)
 
+    total_cpu_total = data.get("resources", {}).get("cpu", {}).get("total", 0)
+    total_cpu_load = data.get("resources", {}).get("cpu", {}).get("load", 0)
+    total_cpu_utilization = (
+        data.get("resources", {}).get("cpu", {}).get("utilization", 0)
+    )
+    total_cpu_str = (
+        f"{total_cpu_utilization:.1f}% ({total_cpu_load:.1f} / {total_cpu_total})"
+    )
+
+    total_memory_total = (
+        data.get("resources", {}).get("memory", {}).get("total", 0) / 1024
+    )
+    total_memory_used = (
+        data.get("resources", {}).get("memory", {}).get("used", 0) / 1024
+    )
+    total_memory_utilization = (
+        data.get("resources", {}).get("memory", {}).get("utilization", 0)
+    )
+    total_memory_str = f"{total_memory_utilization:.1f}% ({total_memory_used:.1f} GB / {total_memory_total:.1f} GB)"
+
+    total_disk_total = (
+        data.get("resources", {}).get("disk", {}).get("total", 0) / 1024 / 1024
+    )
+    total_disk_used = (
+        data.get("resources", {}).get("disk", {}).get("used", 0) / 1024 / 1024
+    )
+    total_disk_utilization = round(
+        data.get("resources", {}).get("disk", {}).get("utilization", 0)
+    )
+    total_disk_str = f"{total_disk_utilization:.1f}% ({total_disk_used:.1f} GB / {total_disk_total:.1f} GB)"
+
     if maintenance == "true" or health == -1:
         health_colour = ansii["blue"]
     elif health > 90:
@@ -233,6 +264,12 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
     output.append(f"{ansii['purple']}Networks:{ansii['end']}      {total_networks}")
 
     output.append("")
+
+    output.append(f"{ansii['purple']}CPU Usage:{ansii['end']}     {total_cpu_str}")
+
+    output.append(f"{ansii['purple']}Memory Usage:{ansii['end']}  {total_memory_str}")
+
+    output.append(f"{ansii['purple']}Disk Usage:{ansii['end']}    {total_disk_str}")
 
     return "\n".join(output)
 

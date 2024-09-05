@@ -576,6 +576,63 @@ class API_Status(Resource):
                 snapshots:
                   type: integer
                   description: The total number of snapshots in the storage cluster
+                resources:
+                  type: object
+                  properties:
+                    memory:
+                      type: object
+                      properties:
+                        total:
+                          type: integer
+                          description: The total amount of RAM (all nodes) in MB
+                        used:
+                          type: integer
+                          description: The total used RAM (all nodes) in MB
+                        free:
+                          type: integer
+                          description: The total free RAM (all nodes) in MB
+                        allocated:
+                          type: integer
+                          description: The total amount of RAM allocated to running domains in MB
+                        provisioned:
+                          type: integer
+                          description: The total amount of RAM provisioned to all domains (regardless of state) in MB
+                        utilization:
+                          type: float
+                          description: The memory utilization percentage (average) of the cluster
+                    vcpu:
+                      type: object
+                      properties:
+                        total:
+                          type: integer
+                          description: The total number of real CPU cores (all nodes)
+                        load:
+                          type: float
+                          description: The current 5-minute CPU load (all nodes summed)
+                        allocated:
+                          type: integer
+                          description: The total number of vCPUs allocated to running domains
+                        provisioned:
+                          type: integer
+                          description: The total number of vCPUs provisioned to all domains (regardless of state)
+                        utilization:
+                          type: float
+                          description: The CPU utilization percentage (average) of the cluster
+                    disk:
+                      type: object
+                      properties:
+                        total:
+                          type: integer
+                          description: The total size of all OSDs in KB
+                        used:
+                          type: integer
+                          description: The total used size of all OSDs in KB
+                        free:
+                          type: integer
+                          description: The total free size of all OSDs in KB
+                        utilization:
+                          type: float
+                          description: The disk utilization percentage (average) of the cluster
           400:
             description: Bad request
         """

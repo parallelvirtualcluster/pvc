@@ -262,6 +262,22 @@ def getClusterInformation(zkhandler):
     # Get cluster maintenance state
     maintenance_state = zkhandler.read("base.config.maintenance")
 
+    # Prepare cluster total values
+    cluster_total_node_memory = 0
+    cluster_total_used_memory = 0
+    cluster_total_free_memory = 0
+    cluster_total_allocated_memory = 0
+    cluster_total_provisioned_memory = 0
+    cluster_total_average_memory_utilization = 0
+    cluster_total_cpu_cores = 0
+    cluster_total_cpu_load = 0
+    cluster_total_average_cpu_utilization = 0
+    cluster_total_allocated_cores = 0
+    cluster_total_osd_space = 0
+    cluster_total_used_space = 0
+    cluster_total_free_space = 0
+    cluster_total_average_osd_utilization = 0
+
     # Get primary node
     maintenance_state, primary_node = zkhandler.read_many(
         [
@@ -276,19 +292,36 @@ def getClusterInformation(zkhandler):
     # Get the list of Nodes
     node_list = zkhandler.children("base.node")
     node_count = len(node_list)
-    # Get the daemon and domain states of all Nodes
+    # Get the information of all Nodes
     node_state_reads = list()
+    node_memory_reads = list()
+    node_cpu_reads = list()
     for node in node_list:
         node_state_reads += [
             ("node.state.daemon", node),
             ("node.state.domain", node),
         ]
+        node_memory_reads += [
+            ("node.memory.total", node),
+            ("node.memory.used", node),
+            ("node.memory.free", node),
+            ("node.memory.allocated", node),
+            ("node.memory.provisioned", node),
+        ]
+        node_cpu_reads += [
+            ("node.data.static", node),
+            ("node.vcpu.allocated", node),
+            ("node.cpu.load", node),
+        ]
     all_node_states = zkhandler.read_many(node_state_reads)
+    all_node_memory = zkhandler.read_many(node_memory_reads)
+    all_node_cpu = zkhandler.read_many(node_cpu_reads)
+
     # Parse out the Node states
     node_data = list()
     formatted_node_states = {"total": node_count}
     for nidx, node in enumerate(node_list):
-        # Split the large list of return values by the IDX of this node
+        # Split the large list of return values by the IDX of this node (states)
         # Each node result is 2 fields long
         pos_start = nidx * 2
         pos_end = nidx * 2 + 2
@@ -307,6 +340,46 @@ def getClusterInformation(zkhandler):
                 formatted_node_states[node_state] += 1
             else:
                 formatted_node_states[node_state] = 1
+
+        # Split the large list of return values by the IDX of this node (memory)
+        # Each node result is 5 fields long
+        pos_start = nidx * 5
+        pos_end = nidx * 5 + 5
+        (
+            node_memory_total,
+            node_memory_used,
+            node_memory_free,
+            node_memory_allocated,
+            node_memory_provisioned,
+        ) = tuple(all_node_memory[pos_start:pos_end])
+        cluster_total_node_memory += int(node_memory_total)
+        cluster_total_used_memory += int(node_memory_used)
+        cluster_total_free_memory += int(node_memory_free)
+        cluster_total_allocated_memory += int(node_memory_allocated)
+        cluster_total_provisioned_memory += int(node_memory_provisioned)
+
+        # Split the large list of return values by the IDX of this node (cpu)
+        # Each nod result is 3 fields long
+        pos_start = nidx * 3
+        pos_end = nidx * 3 + 3
+        node_static_data, node_vcpu_allocated, node_cpu_load = tuple(
+            all_node_cpu[pos_start:pos_end]
+        )
+        cluster_total_cpu_cores += int(node_static_data.split()[0])
+        cluster_total_cpu_load += round(float(node_cpu_load), 2)
+        cluster_total_allocated_cores += int(node_vcpu_allocated)
+
+    cluster_total_average_memory_utilization = (
+        (round((cluster_total_used_memory / cluster_total_node_memory) * 100, 2))
+        if cluster_total_node_memory > 0
+        else 0.00
+    )
+
+    cluster_total_average_cpu_utilization = (
+        (round((cluster_total_cpu_load / cluster_total_cpu_cores) * 100, 2))
+        if cluster_total_cpu_cores > 0
+        else 0.00
+    )
 
     # Get the list of VMs
     vm_list = zkhandler.children("base.domain")
@@ -380,6 +453,18 @@ def getClusterInformation(zkhandler):
             else:
                 formatted_osd_states[osd_state] = 1
 
+        # Add the OSD utilization
+        cluster_total_osd_space += int(osd_stats["kb"])
+        cluster_total_used_space += int(osd_stats["kb_used"])
+        cluster_total_free_space += int(osd_stats["kb_avail"])
+        cluster_total_average_osd_utilization += float(osd_stats["utilization"])
+
+    cluster_total_average_osd_utilization = (
+        (round(cluster_total_average_osd_utilization / len(ceph_osd_list), 2))
+        if ceph_osd_list
+        else 0.00
+    )
+
     # Get the list of Networks
     network_list = zkhandler.children("base.network")
     network_count = len(network_list)
@@ -424,6 +509,28 @@ def getClusterInformation(zkhandler):
         "pools": ceph_pool_count,
         "volumes": ceph_volume_count,
         "snapshots": ceph_snapshot_count,
+        "resources": {
+            "memory": {
+                "total": cluster_total_node_memory,
+                "free": cluster_total_free_memory,
+                "used": cluster_total_used_memory,
+                "allocated": cluster_total_allocated_memory,
+                "provisioned": cluster_total_provisioned_memory,
+                "utilization": cluster_total_average_memory_utilization,
+            },
+            "cpu": {
+                "total": cluster_total_cpu_cores,
+                "load": cluster_total_cpu_load,
+                "allocated": cluster_total_allocated_cores,
+                "utilization": cluster_total_average_cpu_utilization,
+            },
+            "disk": {
+                "total": cluster_total_osd_space,
+                "used": cluster_total_used_space,
+                "free": cluster_total_free_space,
+                "utilization": cluster_total_average_osd_utilization,
+            },
+        },
         "detail": {
             "node": node_data,
             "vm": vm_data,
