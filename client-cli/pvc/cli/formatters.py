@@ -88,7 +88,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
     total_cpu_utilization = (
         data.get("resources", {}).get("cpu", {}).get("utilization", 0)
     )
-    total_cpu_str = (
+    total_cpu_string = (
         f"{total_cpu_utilization:.1f}% ({total_cpu_load:.1f} / {total_cpu_total})"
     )
 
@@ -101,7 +101,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
     total_memory_utilization = (
         data.get("resources", {}).get("memory", {}).get("utilization", 0)
     )
-    total_memory_str = f"{total_memory_utilization:.1f}% ({total_memory_used:.1f} GB / {total_memory_total:.1f} GB)"
+    total_memory_string = f"{total_memory_utilization:.1f}% ({total_memory_used:.1f} GB / {total_memory_total:.1f} GB)"
 
     total_disk_total = (
         data.get("resources", {}).get("disk", {}).get("total", 0) / 1024 / 1024
@@ -112,7 +112,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
     total_disk_utilization = round(
         data.get("resources", {}).get("disk", {}).get("utilization", 0)
     )
-    total_disk_str = f"{total_disk_utilization:.1f}% ({total_disk_used:.1f} GB / {total_disk_total:.1f} GB)"
+    total_disk_string = f"{total_disk_utilization:.1f}% ({total_disk_used:.1f} GB / {total_disk_total:.1f} GB)"
 
     if maintenance == "true" or health == -1:
         health_colour = ansii["blue"]
@@ -125,12 +125,9 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     output = list()
 
-    output.append(f"{ansii['bold']}PVC cluster status:{ansii['end']}")
-    output.append("")
-
-    output.append(f"{ansii['purple']}Primary node:{ansii['end']}  {primary_node}")
-    output.append(f"{ansii['purple']}PVC version:{ansii['end']}   {pvc_version}")
-    output.append(f"{ansii['purple']}Upstream IP:{ansii['end']}   {upstream_ip}")
+    output.append(f"{ansii['purple']}Primary node:{ansii['end']}   {primary_node}")
+    output.append(f"{ansii['purple']}PVC version:{ansii['end']}    {pvc_version}")
+    output.append(f"{ansii['purple']}Upstream IP:{ansii['end']}    {upstream_ip}")
     output.append("")
 
     if health != "-1":
@@ -142,7 +139,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
         health = f"{health} (maintenance on)"
 
     output.append(
-        f"{ansii['purple']}Health:{ansii['end']}        {health_colour}{health}{ansii['end']}"
+        f"{ansii['purple']}Health:{ansii['end']}         {health_colour}{health}{ansii['end']}"
     )
 
     if messages is not None and len(messages) > 0:
@@ -167,7 +164,17 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
             )
 
         messages = "\n               ".join(message_list)
-        output.append(f"{ansii['purple']}Active Faults:{ansii['end']} {messages}")
+    else:
+        messages = "None"
+    output.append(f"{ansii['purple']}Active faults:{ansii['end']}  {messages}")
+
+    output.append(f"{ansii['purple']}Total CPU:{ansii['end']}      {total_cpu_string}")
+
+    output.append(
+        f"{ansii['purple']}Total memory:{ansii['end']}   {total_memory_string}"
+    )
+
+    output.append(f"{ansii['purple']}Total disk:{ansii['end']}     {total_disk_string}")
 
     output.append("")
 
@@ -197,7 +204,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     nodes_string = ", ".join(nodes_strings)
 
-    output.append(f"{ansii['purple']}Nodes:{ansii['end']}         {nodes_string}")
+    output.append(f"{ansii['purple']}Nodes:{ansii['end']}          {nodes_string}")
 
     vm_states = ["start", "disable"]
     vm_states.extend(
@@ -227,7 +234,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     vms_string = ", ".join(vms_strings)
 
-    output.append(f"{ansii['purple']}VMs:{ansii['end']}           {vms_string}")
+    output.append(f"{ansii['purple']}VMs:{ansii['end']}            {vms_string}")
 
     osd_states = ["up,in"]
     osd_states.extend(
@@ -253,23 +260,17 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     osds_string = " ".join(osds_strings)
 
-    output.append(f"{ansii['purple']}OSDs:{ansii['end']}          {osds_string}")
+    output.append(f"{ansii['purple']}OSDs:{ansii['end']}           {osds_string}")
 
-    output.append(f"{ansii['purple']}Pools:{ansii['end']}         {total_pools}")
+    output.append(f"{ansii['purple']}Pools:{ansii['end']}          {total_pools}")
 
-    output.append(f"{ansii['purple']}Volumes:{ansii['end']}       {total_volumes}")
+    output.append(f"{ansii['purple']}Volumes:{ansii['end']}        {total_volumes}")
 
-    output.append(f"{ansii['purple']}Snapshots:{ansii['end']}     {total_snapshots}")
+    output.append(f"{ansii['purple']}Snapshots:{ansii['end']}      {total_snapshots}")
 
-    output.append(f"{ansii['purple']}Networks:{ansii['end']}      {total_networks}")
+    output.append(f"{ansii['purple']}Networks:{ansii['end']}       {total_networks}")
 
     output.append("")
-
-    output.append(f"{ansii['purple']}CPU Usage:{ansii['end']}     {total_cpu_str}")
-
-    output.append(f"{ansii['purple']}Memory Usage:{ansii['end']}  {total_memory_str}")
-
-    output.append(f"{ansii['purple']}Disk Usage:{ansii['end']}    {total_disk_str}")
 
     return "\n".join(output)
 
@@ -295,9 +296,6 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
 
     output = list()
 
-    output.append(f"{ansii['bold']}PVC cluster status:{ansii['end']}")
-    output.append("")
-
     if health != "-1":
         health = f"{health}%"
     else:
@@ -307,7 +305,7 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
         health = f"{health} (maintenance on)"
 
     output.append(
-        f"{ansii['purple']}Health:{ansii['end']}        {health_colour}{health}{ansii['end']}"
+        f"{ansii['purple']}Health:{ansii['end']}         {health_colour}{health}{ansii['end']}"
     )
 
     if messages is not None and len(messages) > 0:
@@ -332,7 +330,48 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
             )
 
         messages = "\n               ".join(message_list)
-        output.append(f"{ansii['purple']}Active Faults:{ansii['end']} {messages}")
+    else:
+        messages = "None"
+    output.append(f"{ansii['purple']}Active faults:{ansii['end']}  {messages}")
+
+    total_cpu_total = data.get("resources", {}).get("cpu", {}).get("total", 0)
+    total_cpu_load = data.get("resources", {}).get("cpu", {}).get("load", 0)
+    total_cpu_utilization = (
+        data.get("resources", {}).get("cpu", {}).get("utilization", 0)
+    )
+    total_cpu_string = (
+        f"{total_cpu_utilization:.1f}% ({total_cpu_load:.1f} / {total_cpu_total})"
+    )
+
+    total_memory_total = (
+        data.get("resources", {}).get("memory", {}).get("total", 0) / 1024
+    )
+    total_memory_used = (
+        data.get("resources", {}).get("memory", {}).get("used", 0) / 1024
+    )
+    total_memory_utilization = (
+        data.get("resources", {}).get("memory", {}).get("utilization", 0)
+    )
+    total_memory_string = f"{total_memory_utilization:.1f}% ({total_memory_used:.1f} GB / {total_memory_total:.1f} GB)"
+
+    total_disk_total = (
+        data.get("resources", {}).get("disk", {}).get("total", 0) / 1024 / 1024
+    )
+    total_disk_used = (
+        data.get("resources", {}).get("disk", {}).get("used", 0) / 1024 / 1024
+    )
+    total_disk_utilization = round(
+        data.get("resources", {}).get("disk", {}).get("utilization", 0)
+    )
+    total_disk_string = f"{total_disk_utilization:.1f}% ({total_disk_used:.1f} GB / {total_disk_total:.1f} GB)"
+
+    output.append(f"{ansii['purple']}CPU usage:{ansii['end']}      {total_cpu_string}")
+
+    output.append(
+        f"{ansii['purple']}Memory usage:{ansii['end']}   {total_memory_string}"
+    )
+
+    output.append(f"{ansii['purple']}Disk usage:{ansii['end']}     {total_disk_string}")
 
     output.append("")
 
