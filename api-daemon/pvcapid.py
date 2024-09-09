@@ -19,6 +19,13 @@
 #
 ###############################################################################
 
+import sys
+from os import path
+
+# Ensure current directory (/usr/share/pvc) is in the system path for Gunicorn
+current_dir = path.dirname(path.abspath(__file__))
+sys.path.append(current_dir)
+
 import pvcapid.Daemon  # noqa: F401
 
 pvcapid.Daemon.entrypoint()

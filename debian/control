@@ -32,7 +32,7 @@ Description: Parallel Virtual Cluster worker daemon
 
 Package: pvc-daemon-api
 Architecture: all
-Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-celery, python3-distutils, python3-redis, python3-lxml, python3-flask-migrate
+Depends: systemd, pvc-daemon-common, gunicorn, python3-gunicorn, python3-yaml, python3-flask, python3-flask-restful, python3-celery, python3-distutils, python3-redis, python3-lxml, python3-flask-migrate
 Description: Parallel Virtual Cluster API daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
