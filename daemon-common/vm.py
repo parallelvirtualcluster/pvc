@@ -580,7 +580,7 @@ def rename_vm(zkhandler, domain, new_domain):
 
     # Verify that the VM is in a stopped state; renaming is not supported otherwise
     state = zkhandler.read(("domain.state", dom_uuid))
-    if state not in ["stop", "disable"]:
+    if state not in ["stop", "disable", "mirror"]:
         return (
             False,
             'ERROR: VM "{}" is not in stopped state; VMs cannot be renamed while running.'.format(
@@ -1125,6 +1125,7 @@ def get_list(
             "migrate",
             "unmigrate",
             "provision",
+            "mirror",
         ]
         if state not in valid_states:
             return False, 'VM state "{}" is not valid.'.format(state)
@@ -1903,10 +1904,10 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
 
     # Check that the domain is stopped (unless force_unlock is set)
     domain_state = zkhandler.read(("domain.state", dom_uuid))
-    if not force_unlock and domain_state not in ["stop", "disable", "fail"]:
+    if not force_unlock and domain_state not in ["stop", "disable", "fail", "mirror"]:
         fail(
             celery,
-            f"VM state {domain_state} not in [stop, disable, fail] and not forcing",
+            f"VM state {domain_state} not in [stop, disable, fail, mirror] and not forcing",
         )
         return False
 
@@ -2329,7 +2330,7 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
 
     # Verify that the VM is in a stopped state; renaming is not supported otherwise
     state = zkhandler.read(("domain.state", dom_uuid))
-    if state not in ["stop", "disable"]:
+    if state not in ["stop", "disable", "mirror"]:
         fail(
             celery,
             f"VM '{domain}' is not stopped or disabled; VMs cannot be rolled back while running",

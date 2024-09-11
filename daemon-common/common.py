@@ -85,6 +85,7 @@ vm_state_combinations = [
     "provision",
     "import",
     "restore",
+    "mirror",
 ]
 ceph_osd_state_combinations = [
     "up,in",

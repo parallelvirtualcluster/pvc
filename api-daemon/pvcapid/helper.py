@@ -1280,7 +1280,7 @@ def vm_flush_locks(zkhandler, vm):
         zkhandler, None, None, None, vm, is_fuzzy=False, negate=False
     )
 
-    if retdata[0].get("state") not in ["stop", "disable"]:
+    if retdata[0].get("state") not in ["stop", "disable", "mirror"]:
         return {"message": "VM must be stopped to flush locks"}, 400
 
     retflag, retdata = pvc_vm.flush_locks(zkhandler, vm)

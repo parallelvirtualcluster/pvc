@@ -1160,6 +1160,7 @@ def get_resource_metrics(zkhandler):
             "fail": 8,
             "import": 9,
             "restore": 10,
+            "mirror": 99,
         }
         state = vm["state"]
         output_lines.append(

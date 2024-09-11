@@ -1760,6 +1760,7 @@ def format_info(config, domain_information, long_output):
         "provision": ansiprint.blue(),
         "restore": ansiprint.blue(),
         "import": ansiprint.blue(),
+        "mirror": ansiprint.blue(),
     }
     ainformation.append(
         "{}State:{}              {}{}{}".format(

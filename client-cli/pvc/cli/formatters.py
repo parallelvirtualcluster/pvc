@@ -206,12 +206,12 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     output.append(f"{ansii['purple']}Nodes:{ansii['end']}          {nodes_string}")
 
-    vm_states = ["start", "disable"]
+    vm_states = ["start", "disable", "mirror"]
     vm_states.extend(
         [
             state
             for state in data.get("vms", {}).keys()
-            if state not in ["total", "start", "disable"]
+            if state not in ["total", "start", "disable", "mirror"]
         ]
     )
 
@@ -221,7 +221,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
             continue
         if state in ["start"]:
             state_colour = ansii["green"]
-        elif state in ["migrate", "disable", "provision"]:
+        elif state in ["migrate", "disable", "provision", "mirror"]:
             state_colour = ansii["blue"]
         elif state in ["stop", "fail"]:
             state_colour = ansii["red"]
