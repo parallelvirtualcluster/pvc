@@ -1294,6 +1294,58 @@ def vm_flush_locks(zkhandler, vm):
     return output, retcode
 
 
+def vm_snapshot_receive_block(pool, volume, snapshot, size, stream, source_snapshot=None):
+    try:
+        import rados
+        import rbd
+
+        cluster = rados.Rados(conffile='/etc/ceph/ceph.conf')
+        cluster.connect()
+        ioctx = cluster.open_ioctx(pool)
+
+        if not source_snapshot:
+            rbd_inst = rbd.RBD()
+            rbd_inst.create(ioctx, volume, size)
+
+        image = rbd.Image(ioctx, volume)
+
+        last_chunk = 0
+        chunk_size = 1024 * 1024 * 128
+
+        if source_snapshot:
+            # Receiving diff data
+            print(f"Applying diff between {source_snapshot} and {snapshot}")
+            while True:
+                chunk = stream.read(chunk_size)
+                if not chunk:
+                    break
+
+                # Extract the offset and length (8 bytes each) and the data
+                offset = int.from_bytes(chunk[:8], 'big')
+                length = int.from_bytes(chunk[8:16], 'big')
+                data = chunk[16:16 + length]
+                image.write(data, offset)
+
+            image.create_snap(snapshot)
+        else:
+            # Receiving full image
+            print(f"Importing full snapshot {snapshot}")
+            while True:
+                chunk = flask.request.stream.read(chunk_size)
+                if not chunk:
+                    break
+                image.write(chunk, last_chunk)
+                last_chunk += len(chunk)
+
+            image.create_snap(snapshot)
+
+        image.close()
+        ioctx.close()
+        cluster.shutdown()
+    except Exception as e:
+        return {"message": f"Failed to import block device: {e}"}, 400
+
+
 #
 # Network functions
 #
