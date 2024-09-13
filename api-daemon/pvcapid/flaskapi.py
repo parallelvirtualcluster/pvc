@@ -5746,7 +5746,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
           - in: query
             name: force
             type: boolean
-            required: flase
+            required: false
             description: Force removal even if some step(s) fail
           - in: query
             name: yes-i-really-mean-it
@@ -6346,7 +6346,7 @@ class API_Storage_Ceph_Volume_Root(Resource):
             name: force
             type: boolean
             required: false
-            default: flase
+            default: false
             description: Force action if volume creation would violate 80% full soft cap on the pool
         responses:
           200:
@@ -6423,7 +6423,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
             name: force
             type: boolean
             required: false
-            default: flase
+            default: false
             description: Force action if volume creation would violate 80% full soft cap on the pool
         responses:
           200:
@@ -6475,7 +6475,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
             name: force
             type: boolean
             required: false
-            default: flase
+            default: false
             description: Force action if new volume size would violate 80% full soft cap on the pool
         responses:
           200:
@@ -6600,7 +6600,7 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
             name: force
             type: boolean
             required: false
-            default: flase
+            default: false
             description: Force action if clone volume size would violate 80% full soft cap on the pool
         responses:
           200:
