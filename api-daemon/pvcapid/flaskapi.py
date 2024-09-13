@@ -2801,7 +2801,7 @@ class API_VM_Locks(Resource):
           - vm
         responses:
           202:
-            description: OK
+            description: Accepted
             schema:
                 type: string
                 description: The Celery job ID of the task
@@ -2924,11 +2924,11 @@ class API_VM_Device(Resource):
             required: true
             description: The raw Libvirt XML definition of the device to attach
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
@@ -2978,11 +2978,11 @@ class API_VM_Device(Resource):
             required: true
             description: The raw Libvirt XML definition of the device to detach
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
@@ -3234,11 +3234,11 @@ class API_VM_Snapshot(Resource):
             required: false
             description: A custom name for the snapshot instead of autogeneration by date
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Execution error
             schema:
@@ -3292,11 +3292,11 @@ class API_VM_Snapshot(Resource):
             required: true
             description: The name of the snapshot to remove
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Execution error
             schema:
@@ -3356,11 +3356,11 @@ class API_VM_Snapshot_Rollback(Resource):
             required: true
             description: The name of the snapshot to roll back to
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Execution error
             schema:
@@ -3436,15 +3436,15 @@ class API_VM_Snapshot_Export(Resource):
             description: The absolute file path to export the snapshot to on the active primary coordinator
           - in: query
             name: incremental_parent
-            type: boolean
+            type: string
             required: false
             description: A snapshot name to generate an incremental diff from
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Execution error
             schema:
@@ -3529,11 +3529,11 @@ class API_VM_Snapshot_Import(Resource):
             default: true
             description: Whether or not to retain the (parent, if incremental) volume snapshot after restore
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Execution error
             schema:
@@ -3692,14 +3692,11 @@ class API_VM_Autobackup_Root(Resource):
               type: string
               example: "user@domain.tld"
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              properties:
-                task_id:
-                  type: string
-                  description: Task ID for the provisioner Celery worker
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
@@ -5185,11 +5182,16 @@ class API_Storage_Ceph_Benchmark(Resource):
             required: false
             description: An optional override name for the job
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
                 type: string
-                description: The Celery job ID of the benchmark (unused elsewhere)
+                description: The Celery job ID of the task
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
         """
         # Verify that the pool is valid
         _list, code = api_helper.ceph_pool_list(
@@ -5316,11 +5318,11 @@ class API_Storage_Ceph_OSDDB_Root(Resource):
             required: true
             description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") to create the OSD DB volume group on
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
@@ -5515,11 +5517,11 @@ class API_Storage_Ceph_OSD_Root(Resource):
             required: false
             description: If set, create this many OSDs on the block device instead of 1; usually 2 or 4 depending on size
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
@@ -5630,11 +5632,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
             required: false
             description: If set, creates an OSD DB LV for the replacement OSD with this explicit size in human units (e.g. 1024M, 20G); if unset, use existing ext_db_size
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
@@ -5688,11 +5690,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
             required: true
             description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") that the OSD should be using
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
@@ -5754,11 +5756,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
             required: true
             description: A confirmation string to ensure that the API consumer really means it
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              id: Message
+                type: string
+                description: The Celery job ID of the task
           404:
             description: Not found
             schema:
@@ -9455,14 +9457,11 @@ class API_Provisioner_Create_Root(Resource):
             type: string
             description: Script install() function keywork argument in "arg=data" format; may be specified multiple times to add multiple arguments
         responses:
-          200:
-            description: OK
+          202:
+            description: Accepted
             schema:
-              type: object
-              properties:
-                task_id:
-                  type: string
-                  description: Task ID for the provisioner Celery worker
+                type: string
+                description: The Celery job ID of the task
           400:
             description: Bad request
             schema:
