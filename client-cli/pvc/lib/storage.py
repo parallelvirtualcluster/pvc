@@ -30,6 +30,7 @@ from requests_toolbelt.multipart.encoder import (
 
 import pvc.lib.ansiprint as ansiprint
 from pvc.lib.common import UploadProgressBar, call_api, get_wait_retdata
+from pvc.cli.helpers import MAX_CONTENT_WIDTH
 
 #
 # Supplemental functions
@@ -1804,7 +1805,7 @@ def get_benchmark_list_results(benchmark_format, benchmark_data):
         benchmark_bandwidth, benchmark_iops = get_benchmark_list_results_legacy(
             benchmark_data
         )
-    elif benchmark_format == 1:
+    elif benchmark_format == 1 or benchmark_format == 2:
         benchmark_bandwidth, benchmark_iops = get_benchmark_list_results_json(
             benchmark_data
         )
@@ -2006,6 +2007,7 @@ def format_info_benchmark(config, benchmark_information):
     benchmark_matrix = {
         0: format_info_benchmark_legacy,
         1: format_info_benchmark_json,
+        2: format_info_benchmark_json,
     }
 
     benchmark_version = benchmark_information[0]["test_format"]
@@ -2340,12 +2342,15 @@ def format_info_benchmark_json(config, benchmark_information):
     if benchmark_information["benchmark_result"] == "Running":
         return "Benchmark test is still running."
 
+    benchmark_format = benchmark_information["test_format"]
     benchmark_details = benchmark_information["benchmark_result"]
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
     ainformation.append(
-        "{}Storage Benchmark details:{}".format(ansiprint.bold(), ansiprint.end())
+        "{}Storage Benchmark details (format {}):{}".format(
+            ansiprint.bold(), benchmark_format, ansiprint.end()
+        )
     )
 
     nice_test_name_map = {
@@ -2393,7 +2398,7 @@ def format_info_benchmark_json(config, benchmark_information):
             if element[1] != 0:
                 useful_latency_tree.append(element)
 
-        max_rows = 9
+        max_rows = 5
         if len(useful_latency_tree) > 9:
             max_rows = len(useful_latency_tree)
         elif len(useful_latency_tree) < 9:
@@ -2402,15 +2407,10 @@ def format_info_benchmark_json(config, benchmark_information):
 
         # Format the static data
         overall_label = [
-            "Overall BW/s:",
-            "Overall IOPS:",
-            "Total I/O:",
-            "Runtime (s):",
-            "User CPU %:",
-            "System CPU %:",
-            "Ctx Switches:",
-            "Major Faults:",
-            "Minor Faults:",
+            "BW/s:",
+            "IOPS:",
+            "I/O:",
+            "Time:",
         ]
         while len(overall_label) < max_rows:
             overall_label.append("")
@@ -2419,15 +2419,104 @@ def format_info_benchmark_json(config, benchmark_information):
             format_bytes_tohuman(int(job_details[io_class]["bw_bytes"])),
             format_ops_tohuman(int(job_details[io_class]["iops"])),
             format_bytes_tohuman(int(job_details[io_class]["io_bytes"])),
-            job_details["job_runtime"] / 1000,
-            job_details["usr_cpu"],
-            job_details["sys_cpu"],
-            job_details["ctx"],
-            job_details["majf"],
-            job_details["minf"],
+            str(job_details["job_runtime"] / 1000) + "s",
         ]
         while len(overall_data) < max_rows:
             overall_data.append("")
+
+        cpu_label = [
+            "Total:",
+            "User:",
+            "Sys:",
+            "OSD:",
+            "MON:",
+        ]
+        while len(cpu_label) < max_rows:
+            cpu_label.append("")
+
+        cpu_data = [
+            (
+                benchmark_details[test]["avg_cpu_util_percent"]["total"]
+                if benchmark_format > 1
+                else "N/A"
+            ),
+            round(job_details["usr_cpu"], 2),
+            round(job_details["sys_cpu"], 2),
+            (
+                benchmark_details[test]["avg_cpu_util_percent"]["ceph-osd"]
+                if benchmark_format > 1
+                else "N/A"
+            ),
+            (
+                benchmark_details[test]["avg_cpu_util_percent"]["ceph-mon"]
+                if benchmark_format > 1
+                else "N/A"
+            ),
+        ]
+        while len(cpu_data) < max_rows:
+            cpu_data.append("")
+
+        memory_label = [
+            "Total:",
+            "OSD:",
+            "MON:",
+        ]
+        while len(memory_label) < max_rows:
+            memory_label.append("")
+
+        memory_data = [
+            (
+                benchmark_details[test]["avg_memory_util_percent"]["total"]
+                if benchmark_format > 1
+                else "N/A"
+            ),
+            (
+                benchmark_details[test]["avg_memory_util_percent"]["ceph-osd"]
+                if benchmark_format > 1
+                else "N/A"
+            ),
+            (
+                benchmark_details[test]["avg_memory_util_percent"]["ceph-mon"]
+                if benchmark_format > 1
+                else "N/A"
+            ),
+        ]
+        while len(memory_data) < max_rows:
+            memory_data.append("")
+
+        network_label = [
+            "Total:",
+            "Sent:",
+            "Recv:",
+        ]
+        while len(network_label) < max_rows:
+            network_label.append("")
+
+        network_data = [
+            (
+                format_bytes_tohuman(
+                    int(benchmark_details[test]["avg_network_util_bps"]["total"])
+                )
+                if benchmark_format > 1
+                else "N/A"
+            ),
+            (
+                format_bytes_tohuman(
+                    int(benchmark_details[test]["avg_network_util_bps"]["sent"])
+                )
+                if benchmark_format > 1
+                else "N/A"
+            ),
+            (
+                format_bytes_tohuman(
+                    int(benchmark_details[test]["avg_network_util_bps"]["recv"])
+                )
+                if benchmark_format > 1
+                else "N/A"
+            ),
+        ]
+        while len(network_data) < max_rows:
+            network_data.append("")
 
         bandwidth_label = [
             "Min:",
@@ -2435,52 +2524,44 @@ def format_info_benchmark_json(config, benchmark_information):
             "Mean:",
             "StdDev:",
             "Samples:",
-            "",
-            "",
-            "",
-            "",
         ]
         while len(bandwidth_label) < max_rows:
             bandwidth_label.append("")
 
         bandwidth_data = [
-            format_bytes_tohuman(int(job_details[io_class]["bw_min"]) * 1024),
-            format_bytes_tohuman(int(job_details[io_class]["bw_max"]) * 1024),
-            format_bytes_tohuman(int(job_details[io_class]["bw_mean"]) * 1024),
-            format_bytes_tohuman(int(job_details[io_class]["bw_dev"]) * 1024),
-            job_details[io_class]["bw_samples"],
-            "",
-            "",
-            "",
-            "",
+            format_bytes_tohuman(int(job_details[io_class]["bw_min"]) * 1024)
+            + " / "
+            + format_ops_tohuman(int(job_details[io_class]["iops_min"])),
+            format_bytes_tohuman(int(job_details[io_class]["bw_max"]) * 1024)
+            + " / "
+            + format_ops_tohuman(int(job_details[io_class]["iops_max"])),
+            format_bytes_tohuman(int(job_details[io_class]["bw_mean"]) * 1024)
+            + " / "
+            + format_ops_tohuman(int(job_details[io_class]["iops_mean"])),
+            format_bytes_tohuman(int(job_details[io_class]["bw_dev"]) * 1024)
+            + " / "
+            + format_ops_tohuman(int(job_details[io_class]["iops_stddev"])),
+            str(job_details[io_class]["bw_samples"])
+            + " / "
+            + str(job_details[io_class]["iops_samples"]),
         ]
         while len(bandwidth_data) < max_rows:
             bandwidth_data.append("")
 
-        iops_data = [
-            format_ops_tohuman(int(job_details[io_class]["iops_min"])),
-            format_ops_tohuman(int(job_details[io_class]["iops_max"])),
-            format_ops_tohuman(int(job_details[io_class]["iops_mean"])),
-            format_ops_tohuman(int(job_details[io_class]["iops_stddev"])),
-            job_details[io_class]["iops_samples"],
-            "",
-            "",
-            "",
-            "",
+        lat_label = [
+            "Min:",
+            "Max:",
+            "Mean:",
+            "StdDev:",
         ]
-        while len(iops_data) < max_rows:
-            iops_data.append("")
+        while len(lat_label) < max_rows:
+            lat_label.append("")
 
         lat_data = [
             int(job_details[io_class]["lat_ns"]["min"]) / 1000,
             int(job_details[io_class]["lat_ns"]["max"]) / 1000,
             int(job_details[io_class]["lat_ns"]["mean"]) / 1000,
             int(job_details[io_class]["lat_ns"]["stddev"]) / 1000,
-            "",
-            "",
-            "",
-            "",
-            "",
         ]
         while len(lat_data) < max_rows:
             lat_data.append("")
@@ -2489,98 +2570,119 @@ def format_info_benchmark_json(config, benchmark_information):
         lat_bucket_label = list()
         lat_bucket_data = list()
         for element in useful_latency_tree:
-            lat_bucket_label.append(element[0])
-            lat_bucket_data.append(element[1])
+            lat_bucket_label.append(element[0] + ":" if element[0] else "")
+            lat_bucket_data.append(round(float(element[1]), 2) if element[1] else "")
+        while len(lat_bucket_label) < max_rows:
+            lat_bucket_label.append("")
+        while len(lat_bucket_data) < max_rows:
+            lat_bucket_label.append("")
 
         # Column default widths
-        overall_label_length = 0
+        overall_label_length = 5
         overall_column_length = 0
-        bandwidth_label_length = 0
-        bandwidth_column_length = 11
-        iops_column_length = 4
-        latency_column_length = 12
+        cpu_label_length = 6
+        cpu_column_length = 0
+        memory_label_length = 6
+        memory_column_length = 0
+        network_label_length = 6
+        network_column_length = 6
+        bandwidth_label_length = 8
+        bandwidth_column_length = 0
+        latency_label_length = 7
+        latency_column_length = 0
         latency_bucket_label_length = 0
+        latency_bucket_column_length = 0
 
         # Column layout:
-        #    General    Bandwidth   IOPS      Latency   Percentiles
-        #    ---------  ----------  --------  --------  ---------------
-        #    Size       Min         Min       Min       A
-        #    BW         Max         Max       Max       B
-        #    IOPS       Mean        Mean      Mean      ...
-        #    Runtime    StdDev      StdDev    StdDev    Z
-        #    UsrCPU     Samples     Samples
-        #    SysCPU
-        #    CtxSw
-        #    MajFault
-        #    MinFault
+        #    Overall    CPU   Memory  Network  Bandwidth/IOPS  Latency   Percentiles
+        #    ---------  ----- ------- -------- --------------  --------  ---------------
+        #    BW         Total Total   Total    Min             Min       A
+        #    IOPS       Usr   OSD     Send     Max             Max       B
+        #    Time       Sys   MON     Recv     Mean            Mean      ...
+        #    Size       OSD                    StdDev          StdDev    Z
+        #               MON                    Samples
 
         # Set column widths
-        for item in overall_label:
-            _item_length = len(str(item))
-            if _item_length > overall_label_length:
-                overall_label_length = _item_length
-
         for item in overall_data:
             _item_length = len(str(item))
             if _item_length > overall_column_length:
                 overall_column_length = _item_length
 
-        test_name_length = len(nice_test_name_map[test])
-        if test_name_length > overall_label_length + overall_column_length:
-            _diff = test_name_length - (overall_label_length + overall_column_length)
-            overall_column_length += _diff
-
-        for item in bandwidth_label:
+        for item in cpu_data:
             _item_length = len(str(item))
-            if _item_length > bandwidth_label_length:
-                bandwidth_label_length = _item_length
+            if _item_length > cpu_column_length:
+                cpu_column_length = _item_length
+
+        for item in memory_data:
+            _item_length = len(str(item))
+            if _item_length > memory_column_length:
+                memory_column_length = _item_length
+
+        for item in network_data:
+            _item_length = len(str(item))
+            if _item_length > network_column_length:
+                network_column_length = _item_length
 
         for item in bandwidth_data:
             _item_length = len(str(item))
             if _item_length > bandwidth_column_length:
                 bandwidth_column_length = _item_length
 
-        for item in iops_data:
-            _item_length = len(str(item))
-            if _item_length > iops_column_length:
-                iops_column_length = _item_length
-
         for item in lat_data:
             _item_length = len(str(item))
             if _item_length > latency_column_length:
                 latency_column_length = _item_length
 
-        for item in lat_bucket_label:
+        for item in lat_bucket_data:
             _item_length = len(str(item))
-            if _item_length > latency_bucket_label_length:
-                latency_bucket_label_length = _item_length
+            if _item_length > latency_bucket_column_length:
+                latency_bucket_column_length = _item_length
 
         # Top row (Headers)
         ainformation.append(
-            "{bold}\
-{overall_label: <{overall_label_length}}    \
-{bandwidth_label: <{bandwidth_label_length}} \
-{bandwidth: <{bandwidth_length}}   \
-{iops: <{iops_length}}   \
-{latency: <{latency_length}}   \
-{latency_bucket_label: <{latency_bucket_label_length}} \
-{latency_bucket} \
-{end_bold}".format(
+            "{bold}{overall_label: <{overall_label_length}} {header_fill}{end_bold}".format(
                 bold=ansiprint.bold(),
                 end_bold=ansiprint.end(),
                 overall_label=nice_test_name_map[test],
                 overall_label_length=overall_label_length,
-                bandwidth_label="",
-                bandwidth_label_length=bandwidth_label_length,
-                bandwidth="Bandwidth/s",
-                bandwidth_length=bandwidth_column_length,
-                iops="IOPS",
-                iops_length=iops_column_length,
-                latency="Latency (μs)",
-                latency_length=latency_column_length,
-                latency_bucket_label="Latency Buckets (μs/%)",
-                latency_bucket_label_length=latency_bucket_label_length,
-                latency_bucket="",
+                header_fill="-"
+                * (
+                    (MAX_CONTENT_WIDTH if MAX_CONTENT_WIDTH <= 120 else 120)
+                    - len(nice_test_name_map[test])
+                    - 4
+                ),
+            )
+        )
+
+        ainformation.append(
+            "{bold}\
+{overall_label: <{overall_label_length}}  \
+{cpu_label: <{cpu_label_length}}  \
+{memory_label: <{memory_label_length}}  \
+{network_label: <{network_label_length}}  \
+{bandwidth_label: <{bandwidth_label_length}}  \
+{latency_label: <{latency_label_length}}  \
+{latency_bucket_label: <{latency_bucket_label_length}}\
+{end_bold}".format(
+                bold=ansiprint.bold(),
+                end_bold=ansiprint.end(),
+                overall_label="Overall",
+                overall_label_length=overall_label_length + overall_column_length + 1,
+                cpu_label="CPU (%)",
+                cpu_label_length=cpu_label_length + cpu_column_length + 1,
+                memory_label="Memory (%)",
+                memory_label_length=memory_label_length + memory_column_length + 1,
+                network_label="Network (bps)",
+                network_label_length=network_label_length + network_column_length + 1,
+                bandwidth_label="Bandwidth / IOPS",
+                bandwidth_label_length=bandwidth_label_length
+                + bandwidth_column_length
+                + 1,
+                latency_label="Latency (μs)",
+                latency_label_length=latency_label_length + latency_column_length + 1,
+                latency_bucket_label="Buckets (μs/%)",
+                latency_bucket_label_length=latency_bucket_label_length
+                + latency_bucket_column_length,
             )
         )
 
@@ -2588,14 +2690,20 @@ def format_info_benchmark_json(config, benchmark_information):
             # Top row (Headers)
             ainformation.append(
                 "{bold}\
-{overall_label: >{overall_label_length}} \
-{overall: <{overall_length}}   \
-{bandwidth_label: >{bandwidth_label_length}} \
-{bandwidth: <{bandwidth_length}}   \
-{iops: <{iops_length}}   \
-{latency: <{latency_length}}   \
-{latency_bucket_label: >{latency_bucket_label_length}} \
-{latency_bucket} \
+{overall_label: <{overall_label_length}} \
+{overall: <{overall_length}}  \
+{cpu_label: <{cpu_label_length}} \
+{cpu: <{cpu_length}}  \
+{memory_label: <{memory_label_length}} \
+{memory: <{memory_length}}  \
+{network_label: <{network_label_length}} \
+{network: <{network_length}}  \
+{bandwidth_label: <{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}}  \
+{latency_label: <{latency_label_length}} \
+{latency: <{latency_length}}  \
+{latency_bucket_label: <{latency_bucket_label_length}} \
+{latency_bucket}\
 {end_bold}".format(
                     bold="",
                     end_bold="",
@@ -2603,12 +2711,24 @@ def format_info_benchmark_json(config, benchmark_information):
                     overall_label_length=overall_label_length,
                     overall=overall_data[idx],
                     overall_length=overall_column_length,
+                    cpu_label=cpu_label[idx],
+                    cpu_label_length=cpu_label_length,
+                    cpu=cpu_data[idx],
+                    cpu_length=cpu_column_length,
+                    memory_label=memory_label[idx],
+                    memory_label_length=memory_label_length,
+                    memory=memory_data[idx],
+                    memory_length=memory_column_length,
+                    network_label=network_label[idx],
+                    network_label_length=network_label_length,
+                    network=network_data[idx],
+                    network_length=network_column_length,
                     bandwidth_label=bandwidth_label[idx],
                     bandwidth_label_length=bandwidth_label_length,
                     bandwidth=bandwidth_data[idx],
                     bandwidth_length=bandwidth_column_length,
-                    iops=iops_data[idx],
-                    iops_length=iops_column_length,
+                    latency_label=lat_label[idx],
+                    latency_label_length=latency_label_length,
                     latency=lat_data[idx],
                     latency_length=latency_column_length,
                     latency_bucket_label=lat_bucket_label[idx],
@@ -2617,4 +2737,4 @@ def format_info_benchmark_json(config, benchmark_information):
                 )
             )
 
-    return "\n".join(ainformation)
+    return "\n".join(ainformation) + "\n"
