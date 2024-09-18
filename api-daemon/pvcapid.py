@@ -26,6 +26,6 @@ from os import path
 current_dir = path.dirname(path.abspath(__file__))
 sys.path.append(current_dir)
 
-import pvcapid.Daemon  # noqa: F401
+import pvcapid.Daemon  # noqa: F401, E402
 
 pvcapid.Daemon.entrypoint()

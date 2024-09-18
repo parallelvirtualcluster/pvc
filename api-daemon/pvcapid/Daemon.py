@@ -19,8 +19,6 @@
 #
 ###############################################################################
 
-import sys
-import os
 import subprocess
 from ssl import SSLContext, TLSVersion
 from distutils.util import strtobool as dustrtobool
@@ -36,6 +34,7 @@ API_VERSION = 1.0
 ##########################################################
 # Helper Functions
 ##########################################################
+
 
 def strtobool(stringv):
     if stringv is None:
@@ -61,6 +60,7 @@ config["daemon_version"] = version
 ##########################################################
 # Flask App Creation for Gunicorn
 ##########################################################
+
 
 def create_app():
     """
@@ -101,8 +101,9 @@ def create_app():
 # Entrypoint
 ##########################################################
 
+
 def entrypoint():
-    if config['debug']:
+    if config["debug"]:
         app = create_app()
 
         if config["api_ssl_enabled"]:
@@ -124,21 +125,30 @@ def entrypoint():
     else:
         # Build the command to run Gunicorn
         gunicorn_cmd = [
-            'gunicorn',
-            '--workers', '1',
-            '--threads', '8',
-            '--timeout', '86400',
-            '--bind', '{}:{}'.format(config["api_listen_address"], config["api_listen_port"]),
-            'pvcapid.Daemon:create_app()',
-            '--log-level', 'info',
-            '--access-logfile', '-',
-            '--error-logfile', '-',
+            "gunicorn",
+            "--workers",
+            "1",
+            "--threads",
+            "8",
+            "--timeout",
+            "86400",
+            "--bind",
+            "{}:{}".format(config["api_listen_address"], config["api_listen_port"]),
+            "pvcapid.Daemon:create_app()",
+            "--log-level",
+            "info",
+            "--access-logfile",
+            "-",
+            "--error-logfile",
+            "-",
         ]
 
         if config["api_ssl_enabled"]:
             gunicorn_cmd += [
-                '--certfile', config["api_ssl_cert_file"],
-                '--keyfile', config["api_ssl_key_file"]
+                "--certfile",
+                config["api_ssl_cert_file"],
+                "--keyfile",
+                config["api_ssl_key_file"],
             ]
 
         # Run Gunicorn
