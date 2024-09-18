@@ -410,11 +410,14 @@ def run_benchmark_job(
     return resource_data, jstdout
 
 
-def worker_run_benchmark(zkhandler, celery, config, pool):
+def worker_run_benchmark(zkhandler, celery, config, pool, name):
     # Phase 0 - connect to databases
-    cur_time = datetime.now().isoformat(timespec="seconds")
-    cur_primary = zkhandler.read("base.config.primary_node")
-    job_name = f"{cur_time}_{cur_primary}"
+    if not name:
+        cur_time = datetime.now().isoformat(timespec="seconds")
+        cur_primary = zkhandler.read("base.config.primary_node")
+        job_name = f"{cur_time}_{cur_primary}"
+    else:
+        job_name = name
 
     current_stage = 0
     total_stages = 13

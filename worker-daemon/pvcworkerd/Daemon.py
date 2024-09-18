@@ -96,12 +96,12 @@ def create_vm(
 
 
 @celery.task(name="storage.benchmark", bind=True, routing_key="run_on")
-def storage_benchmark(self, pool=None, run_on="primary"):
+def storage_benchmark(self, pool=None, name=None, run_on="primary"):
     @ZKConnection(config)
-    def run_storage_benchmark(zkhandler, self, pool):
-        return worker_run_benchmark(zkhandler, self, config, pool)
+    def run_storage_benchmark(zkhandler, self, pool, name):
+        return worker_run_benchmark(zkhandler, self, config, pool, name)
 
-    return run_storage_benchmark(self, pool)
+    return run_storage_benchmark(self, pool, name)
 
 
 @celery.task(name="cluster.autobackup", bind=True, routing_key="run_on")

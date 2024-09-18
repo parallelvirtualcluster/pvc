@@ -1725,15 +1725,17 @@ def format_list_snapshot(config, snapshot_list):
 #
 # Benchmark functions
 #
-def ceph_benchmark_run(config, pool, wait_flag):
+def ceph_benchmark_run(config, pool, name, wait_flag):
     """
     Run a storage benchmark against {pool}
 
     API endpoint: POST /api/v1/storage/ceph/benchmark
-    API arguments: pool={pool}
+    API arguments: pool={pool}, name={name}
     API schema: {message}
     """
     params = {"pool": pool}
+    if name:
+        params["name"] = name
     response = call_api(config, "post", "/storage/ceph/benchmark", params=params)
 
     return get_wait_retdata(response, wait_flag)

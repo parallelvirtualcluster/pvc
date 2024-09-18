@@ -3756,6 +3756,13 @@ def cli_storage_benchmark():
 @connection_req
 @click.argument("pool")
 @click.option(
+    "--name",
+    "name",
+    default=None,
+    show_default=False,
+    help="Use a custom name for the job",
+)
+@click.option(
     "--wait/--no-wait",
     "wait_flag",
     is_flag=True,
@@ -3766,12 +3773,14 @@ def cli_storage_benchmark():
 @confirm_opt(
     "Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue"
 )
-def cli_storage_benchmark_run(pool, wait_flag):
+def cli_storage_benchmark_run(pool, name, wait_flag):
     """
     Run a storage benchmark on POOL in the background.
     """
 
-    retcode, retmsg = pvc.lib.storage.ceph_benchmark_run(CLI_CONFIG, pool, wait_flag)
+    retcode, retmsg = pvc.lib.storage.ceph_benchmark_run(
+        CLI_CONFIG, pool, name, wait_flag
+    )
 
     if retcode and wait_flag:
         retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)

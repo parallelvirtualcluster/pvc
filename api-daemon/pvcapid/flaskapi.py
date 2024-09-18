@@ -5069,6 +5069,10 @@ class API_Storage_Ceph_Benchmark(Resource):
                 "required": True,
                 "helptext": "A valid pool must be specified.",
             },
+            {
+                "name": "name",
+                "required": False,
+            },
         ]
     )
     @Authenticator
@@ -5084,6 +5088,11 @@ class API_Storage_Ceph_Benchmark(Resource):
             type: string
             required: true
             description: The PVC storage pool to benchmark
+          - in: query
+            name: name
+            type: string
+            required: false
+            description: An optional override name for the job
         responses:
           200:
             description: OK
@@ -5101,7 +5110,10 @@ class API_Storage_Ceph_Benchmark(Resource):
             }, 400
 
         task = run_celery_task(
-            "storage.benchmark", pool=reqargs.get("pool", None), run_on="primary"
+            "storage.benchmark",
+            pool=reqargs.get("pool", None),
+            name=reqargs.get("name", None),
+            run_on="primary",
         )
         return (
             {
