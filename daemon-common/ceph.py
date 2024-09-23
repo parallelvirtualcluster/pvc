@@ -1228,16 +1228,16 @@ def osd_worker_add_osd(
     current_stage = 0
     total_stages = 5
     if split_count is None:
-        _split_count = 1
+        split_count = 1
     else:
-        _split_count = split_count
-    total_stages = total_stages + 3 * int(_split_count)
+        split_count = int(split_count)
+    total_stages = total_stages + 3 * int(split_count)
     if ext_db_ratio is not None or ext_db_size is not None:
-        total_stages = total_stages + 3 * int(_split_count) + 1
+        total_stages = total_stages + 3 * int(split_count) + 1
 
     start(
         celery,
-        f"Adding {_split_count} new OSD(s) on device {device} with weight {weight}",
+        f"Adding {split_count} new OSD(s) on device {device} with weight {weight}",
         current=current_stage,
         total=total_stages,
     )
@@ -1278,7 +1278,7 @@ def osd_worker_add_osd(
     else:
         ext_db_flag = False
 
-    if split_count is not None:
+    if split_count > 1:
         split_flag = f"--osds-per-device {split_count}"
         is_split = True
         log_info(
