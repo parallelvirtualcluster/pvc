@@ -3572,6 +3572,131 @@ class API_VM_Snapshot_Import(Resource):
 api.add_resource(API_VM_Snapshot_Import, "/vm/<vm>/snapshot/import")
 
 
+# /vm/<vm>/snapshot/send
+class API_VM_Snapshot_Send(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "snapshot_name",
+                "required": True,
+                "helptext": "A snapshot name must be specified",
+            },
+            {
+                "name": "destination_api_uri",
+                "required": True,
+                "helptext": "A destination API URI must be specified",
+            },
+            {
+                "name": "destination_api_key",
+                "required": True,
+                "helptext": "A destination API key must be specified",
+            },
+            {
+                "name": "destination_api_verify_ssl",
+                "required": False,
+            },
+            {
+                "name": "incremental_parent",
+                "required": False,
+            },
+            {
+                "name": "destination_storage_pool",
+                "required": False,
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Send a snapshot of a VM's disks and configuration to another PVC cluster
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: snapshot_name
+            type: string
+            required: true
+            description: The name of the snapshot to export (must exist)
+          - in: query
+            name: destination_api_uri
+            type: string
+            required: true
+            description: The base API URI of the destination PVC cluster (with prefix if applicable)
+          - in: query
+            name: destination_api_key
+            type: string
+            required: true
+            description: The API authentication key of the destination PVC cluster
+          - in: query
+            name: destination_api_verify_ssl
+            type: boolean
+            required: false
+            default: true
+            description: Whether or not to validate SSL certificates for an SSL-enabled destination API
+          - in: query
+            name: incremental_parent
+            type: string
+            required: false
+            description: A snapshot name to generate an incremental diff from; incremental send only if unset
+          - in: query
+            name: destination_storage_pool
+            type: string
+            required: false
+            default: source storage pool name
+            description: The remote cluster storage pool to create RBD volumes in, if different from the source storage pool
+        responses:
+          202:
+            description: Accepted
+            schema:
+                type: string
+                description: The Celery job ID of the task
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        snapshot_name = reqargs.get("snapshot_name", None)
+        destination_api_uri = reqargs.get("destination_api_uri", None)
+        destination_api_key = reqargs.get("destination_api_key", None)
+        destination_api_verify_ssl = bool(
+            strtobool(reqargs.get("destination_api_verify_ssl", "true"))
+        )
+        incremental_parent = reqargs.get("incremental_parent", None)
+        destination_storage_pool = reqargs.get("destination_storage_pool", None)
+
+        task = run_celery_task(
+            "vm.send_snapshot",
+            domain=vm,
+            snapshot_name=snapshot_name,
+            destination_api_uri=destination_api_uri,
+            destination_api_key=destination_api_key,
+            destination_api_verify_ssl=destination_api_verify_ssl,
+            incremental_parent=incremental_parent,
+            destination_storage_pool=destination_storage_pool,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.send_snapshot",
+                "run_on": f"{get_primary_node()} (primary)",
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
+
+
+api.add_resource(API_VM_Snapshot_Send, "/vm/<vm>/snapshot/send")
+
+
 # /vm/<vm>/snapshot/receive/block
 class API_VM_Snapshot_Receive_Block(Resource):
     @RequestParser(

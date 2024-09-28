@@ -595,6 +595,43 @@ def vm_import_snapshot(
     return get_wait_retdata(response, wait_flag)
 
 
+def vm_send_snapshot(
+    config,
+    vm,
+    snapshot_name,
+    destination_api_uri,
+    destination_api_key,
+    destination_api_verify_ssl=True,
+    destination_storage_pool=None,
+    incremental_parent=None,
+    wait_flag=True,
+):
+    """
+    Send an (existing) snapshot of a VM's disks andconfiguration to a destination PVC cluster, optionally
+    incremental with incremental_parent
+
+    API endpoint: POST /vm/{vm}/snapshot/send
+    API arguments: snapshot_name=snapshot_name, destination_api_uri=destination_api_uri, destination_api_key=destination_api_key, incremental_parent=incremental_parent
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "snapshot_name": snapshot_name,
+        "destination_api_uri": destination_api_uri,
+        "destination_api_key": destination_api_key,
+        "destination_api_verify_ssl": destination_api_verify_ssl,
+    }
+    if destination_storage_pool is not None:
+        params["destination_storage_pool"] = destination_storage_pool
+    if incremental_parent is not None:
+        params["incremental_parent"] = incremental_parent
+
+    response = call_api(
+        config, "post", "/vm/{vm}/snapshot/send".format(vm=vm), params=params
+    )
+
+    return get_wait_retdata(response, wait_flag)
+
+
 def vm_autobackup(config, email_recipients=None, force_full_flag=False, wait_flag=True):
     """
     Perform a cluster VM autobackup

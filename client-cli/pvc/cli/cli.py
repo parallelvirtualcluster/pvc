@@ -2019,6 +2019,100 @@ def cli_vm_snapshot_import(
 
 
 ###############################################################################
+# > pvc vm snapshot send
+###############################################################################
+@click.command(
+    name="send",
+    short_help="Send a snapshot of a virtual machine to another PVC cluster.",
+)
+@connection_req
+@click.argument("domain")
+@click.argument("snapshot_name")
+@click.argument("destination")
+@click.option(
+    "-k",
+    "--destination-api-key",
+    "destination_api_key",
+    default=None,
+    help="The API key of the destination cluster when specifying an API URI.",
+)
+@click.option(
+    "-p",
+    "--destination-pool",
+    "destination_storage_pool",
+    default=None,
+    help="The target storage pool on the destination cluster, if it differs from the source pool.",
+)
+@click.option(
+    "-i",
+    "--incremental",
+    "incremental_parent",
+    default=None,
+    help="Perform an incremental volume send from this parent snapshot.",
+)
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress if waiting",
+)
+def cli_vm_snapshot_send(
+    domain,
+    snapshot_name,
+    destination,
+    destination_api_key,
+    destination_storage_pool,
+    incremental_parent,
+    wait_flag,
+):
+    """
+    Send the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the PVC cluster DESTINATION.
+
+    DOMAIN may be a UUID or name.
+
+    DESTINATION may either be a configured PVC connection name in this CLI instance (i.e. a valid local argument to "--connection"), or a full API URL, including port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
+
+    The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
+
+    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify one with the "-p"/"--detination-pool" option.
+
+    Incremental sends are possible by specifying the "-i"/"--incremental-parent" option along with a parent snapshot name. To correctly receive, that parent snapshot must exist on DESTINATION.
+    """
+
+    connections_config = get_store(CLI_CONFIG["store_path"])
+    if destination in connections_config.keys():
+        destination_cluster_config = connections_config[destination]
+        destination_api_uri = "{}://{}:{}{}".format(
+            destination_cluster_config["scheme"],
+            destination_cluster_config["host"],
+            destination_cluster_config["port"],
+            CLI_CONFIG["api_prefix"],
+        )
+        destination_api_key = destination_cluster_config["api_key"]
+    else:
+        destination_api_uri = destination
+        destination_api_key = destination_api_key
+
+    retcode, retmsg = pvc.lib.vm.vm_send_snapshot(
+        CLI_CONFIG,
+        domain,
+        snapshot_name,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=CLI_CONFIG.get("verify_ssl"),
+        destination_storage_pool=destination_storage_pool,
+        incremental_parent=incremental_parent,
+        wait_flag=wait_flag,
+    )
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
+    finish(retcode, retmsg)
+
+
+###############################################################################
 # > pvc vm backup
 ###############################################################################
 @click.group(
@@ -6588,6 +6682,7 @@ cli_vm_snapshot.add_command(cli_vm_snapshot_remove)
 cli_vm_snapshot.add_command(cli_vm_snapshot_rollback)
 cli_vm_snapshot.add_command(cli_vm_snapshot_export)
 cli_vm_snapshot.add_command(cli_vm_snapshot_import)
+cli_vm_snapshot.add_command(cli_vm_snapshot_send)
 cli_vm.add_command(cli_vm_snapshot)
 cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)

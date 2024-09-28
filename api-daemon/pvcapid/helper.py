@@ -1294,12 +1294,14 @@ def vm_flush_locks(zkhandler, vm):
     return output, retcode
 
 
-def vm_snapshot_receive_block(pool, volume, snapshot, size, stream, source_snapshot=None):
+def vm_snapshot_receive_block(
+    pool, volume, snapshot, size, stream, source_snapshot=None
+):
     try:
         import rados
         import rbd
 
-        cluster = rados.Rados(conffile='/etc/ceph/ceph.conf')
+        cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
         cluster.connect()
         ioctx = cluster.open_ioctx(pool)
 
@@ -1321,9 +1323,9 @@ def vm_snapshot_receive_block(pool, volume, snapshot, size, stream, source_snaps
                     break
 
                 # Extract the offset and length (8 bytes each) and the data
-                offset = int.from_bytes(chunk[:8], 'big')
-                length = int.from_bytes(chunk[8:16], 'big')
-                data = chunk[16:16 + length]
+                offset = int.from_bytes(chunk[:8], "big")
+                length = int.from_bytes(chunk[8:16], "big")
+                data = chunk[16 : 16 + length]
                 image.write(data, offset)
 
             image.create_snap(snapshot)

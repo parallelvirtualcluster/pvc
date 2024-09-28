@@ -33,6 +33,7 @@ from daemon_lib.vm import (
     vm_worker_rollback_snapshot,
     vm_worker_export_snapshot,
     vm_worker_import_snapshot,
+    vm_worker_send_snapshot,
 )
 from daemon_lib.ceph import (
     osd_worker_add_osd,
@@ -224,6 +225,54 @@ def vm_import_snapshot(
 
     return run_vm_import_snapshot(
         self, domain, snapshot_name, import_path, retain_snapshot=retain_snapshot
+    )
+
+
+@celery.task(name="vm.send_snapshot", bind=True, routing_key="run_on")
+def vm_send_snapshot(
+    self,
+    domain=None,
+    snapshot_name=None,
+    destination_api_uri="",
+    destination_api_key="",
+    destination_api_verify_ssl=True,
+    incremental_parent=None,
+    destination_storage_pool=None,
+    run_on="primary",
+):
+    @ZKConnection(config)
+    def run_vm_send_snapshot(
+        zkhandler,
+        self,
+        domain,
+        snapshot_name,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=True,
+        incremental_parent=None,
+        destination_storage_pool=None,
+    ):
+        return vm_worker_send_snapshot(
+            zkhandler,
+            self,
+            domain,
+            snapshot_name,
+            destination_api_uri,
+            destination_api_key,
+            destination_api_verify_ssl=destination_api_verify_ssl,
+            incremental_parent=incremental_parent,
+            destination_storage_pool=destination_storage_pool,
+        )
+
+    return run_vm_send_snapshot(
+        self,
+        domain,
+        snapshot_name,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=destination_api_verify_ssl,
+        incremental_parent=incremental_parent,
+        destination_storage_pool=destination_storage_pool,
     )
 
 
