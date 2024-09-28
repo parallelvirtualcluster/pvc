@@ -19,6 +19,8 @@
 #
 ###############################################################################
 
+import sys
+
 from click import progressbar
 from time import sleep, time
 
@@ -115,30 +117,39 @@ def wait_for_celery_task(CLI_CONFIG, task_detail, start_late=False):
         )
         while True:
             sleep(0.5)
+
+            task_status = pvc.lib.common.task_status(
+                CLI_CONFIG, task_id=task_id, is_watching=True
+            )
+
             if isinstance(task_status, tuple):
                 continue
             if task_status.get("state") != "RUNNING":
                 break
-            if task_status.get("current") > last_task:
-                current_task = int(task_status.get("current"))
-                total_task = int(task_status.get("total"))
-                bar.length = total_task
+            if task_status.get("current") == 0:
+                continue
+
+            current_task = int(task_status.get("current"))
+            total_task = int(task_status.get("total"))
+            bar.length = total_task
+
+            if current_task > last_task:
                 bar.update(current_task - last_task)
                 last_task = current_task
-                # The extensive spaces at the end cause this to overwrite longer previous messages
-                curlen = len(str(task_status.get("status")))
-                if curlen > maxlen:
-                    maxlen = curlen
-                lendiff = maxlen - curlen
-                overwrite_whitespace = " " * lendiff
-                echo(
-                    CLI_CONFIG,
-                    "  " + task_status.get("status") + overwrite_whitespace,
-                    newline=False,
-                )
-            task_status = pvc.lib.common.task_status(
-                CLI_CONFIG, task_id=task_id, is_watching=True
+
+            curlen = len(str(task_status.get("status")))
+            if curlen > maxlen:
+                maxlen = curlen
+            lendiff = maxlen - curlen
+            overwrite_whitespace = " " * lendiff
+
+            percent_complete = (current_task / total_task) * 100
+            bar_output = f"[{bar.format_bar()}]  {percent_complete:3.0f}%"
+            sys.stdout.write(
+                f"\r  {bar_output}  {task_status['status']}{overwrite_whitespace}"
             )
+            sys.stdout.flush()
+
         if task_status.get("state") == "SUCCESS":
             bar.update(total_task - last_task)
 
