@@ -163,7 +163,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
                 )
             )
 
-        messages = "\n               ".join(message_list)
+        messages = "\n                ".join(message_list)
     else:
         messages = "None"
     output.append(f"{ansii['purple']}Active faults:{ansii['end']}  {messages}")
