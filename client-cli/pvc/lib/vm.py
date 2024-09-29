@@ -2350,9 +2350,6 @@ def format_list(config, vm_list):
                         ansiprint.end(),
                     )
                 )
-                # Fix the length due to the extra fake characters
-                vm_nets_length -= len(net_vni)
-                vm_nets_length += len(net_string_list[net_idx])
             else:
                 net_string_list.append(net_vni)
 
@@ -2382,7 +2379,8 @@ def format_list(config, vm_list):
                 vm_state=domain_information["state"],
                 vm_tags=",".join(tag_list),
                 vm_snapshots=len(domain_information.get("snapshots", list())),
-                vm_networks=",".join(net_string_list),
+                vm_networks=",".join(net_string_list)
+                + ("" if all(net_invalid_list) else " "),
                 vm_memory=domain_information["memory"],
                 vm_vcpu=domain_information["vcpu"],
                 vm_node=domain_information["node"],
