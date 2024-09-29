@@ -3777,7 +3777,7 @@ class API_VM_Snapshot_Receive_Block(Resource):
         """
         return api_helper.vm_snapshot_receive_block(
             reqargs.get("pool"),
-            reqargs.get("volume") + "_recv",
+            reqargs.get("volume"),
             reqargs.get("snapshot"),
             int(reqargs.get("size")),
             flask.request.stream,
@@ -3786,6 +3786,82 @@ class API_VM_Snapshot_Receive_Block(Resource):
 
 
 api.add_resource(API_VM_Snapshot_Receive_Block, "/vm/<vm>/snapshot/receive/block")
+
+
+# /vm/<vm>/snapshot/receive/config
+class API_VM_Snapshot_Receive_Config(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "snapshot",
+                "required": True,
+            },
+            {
+                "name": "source_snapshot",
+                "required": False,
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Receive a snapshot of a VM configuration from another PVC cluster
+
+        NOTICE: This is an API-internal endpoint used by /vm/<vm>/snapshot/send; it should never be called by a client.
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: pool
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD data pool
+          - in: query
+            name: volume
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD volume
+          - in: query
+            name: snapshot
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD volume snapshot
+          - in: query
+            name: size
+            type: integer
+            required: true
+            description: The size in bytes of the Ceph RBD volume
+          - in: query
+            name: source_snapshot
+            type: string
+            required: false
+            description: The name of the destination Ceph RBD volume snapshot parent for incremental transfers
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.vm_snapshot_receive_config(
+            reqargs.get("snapshot"),
+            flask.request.get_json(),
+            source_snapshot=reqargs.get("source_snapshot"),
+        )
+
+
+api.add_resource(API_VM_Snapshot_Receive_Config, "/vm/<vm>/snapshot/receive/config")
 
 
 # /vm/autobackup

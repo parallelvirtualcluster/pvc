@@ -3184,6 +3184,8 @@ def vm_worker_send_snapshot(
         )
         return False
 
+    vm_name = vm_detail["name"]
+
     # Validate that the destination cluster can be reached
     destination_api_timeout = (3.05, 172800)
     destination_api_headers = {
@@ -3267,6 +3269,11 @@ def vm_worker_send_snapshot(
         verify=destination_api_verify_ssl,
     )
     destination_vm_status = response.json()
+    if len(destination_vm_status) > 0:
+        destination_vm_status = destination_vm_status[0]
+    else:
+        destination_vm_status = {}
+
     current_destination_vm_state = destination_vm_status.get("state", None)
     if (
         current_destination_vm_state is not None
@@ -3351,7 +3358,7 @@ def vm_worker_send_snapshot(
     # Begin send, set stages
     total_stages = (
         2
-        + (2 * len(snapshot_rbdsnaps))
+        + (3 * len(snapshot_rbdsnaps))
         + (len(snapshot_rbdsnaps) if current_destination_vm_state is None else 0)
     )
 
@@ -3384,7 +3391,7 @@ def vm_worker_send_snapshot(
             return False
 
         try:
-            size_bytes = ceph.format_bytes_fromhuman(retdata[0]["stats"]["size"])
+            _ = ceph.format_bytes_fromhuman(retdata[0]["stats"]["size"])
         except Exception as e:
             error_message = f"Failed to get volume size for {rbd_name}: {e}"
 
@@ -3395,7 +3402,7 @@ def vm_worker_send_snapshot(
             current_stage += 1
             update(
                 celery,
-                f"Creating remote volume {pool}/{volume} for {rbd_name}@{snapshot_name}",
+                f"Checking for remote volume {rbd_name}",
                 current=current_stage,
                 total=total_stages,
             )
@@ -3413,26 +3420,6 @@ def vm_worker_send_snapshot(
                 fail(
                     celery,
                     f"Remote storage pool {pool} already contains volume {volume}",
-                )
-                return False
-
-            # Create the volume on the target
-            params = {
-                "size": size_bytes,
-            }
-            response = requests.post(
-                f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
-                timeout=destination_api_timeout,
-                headers=destination_api_headers,
-                params=params,
-                data=None,
-                verify=destination_api_verify_ssl,
-            )
-            destination_volume_create_status = response.json()
-            if response.status_code != 200:
-                fail(
-                    celery,
-                    f"Failed to create volume {rbd_name} on target: {destination_volume_create_status['message']}",
                 )
                 return False
 
@@ -3508,7 +3495,7 @@ def vm_worker_send_snapshot(
         }
         try:
             response = requests.post(
-                f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
+                f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
                 timeout=destination_api_timeout,
                 headers=send_headers,
                 params=send_params,
@@ -3516,10 +3503,10 @@ def vm_worker_send_snapshot(
                 verify=destination_api_verify_ssl,
             )
             response.raise_for_status()
-        except Exception as e:
+        except Exception:
             fail(
                 celery,
-                f"Failed to send snapshot: {e}",
+                f"Failed to send snapshot: {response.json()['message']}",
             )
             return False
         finally:
@@ -3527,10 +3514,43 @@ def vm_worker_send_snapshot(
             ioctx.close()
             cluster.shutdown()
 
-    # Send the VM configuration
-    # if current_destination_vm_state is None:
-    # This is a new VM, so define it
-    # response = requests.post()
-    # else:
-    # This is a modification
-    # response = requests.post()
+    current_stage += 1
+    update(
+        celery,
+        f"Sending VM configuration for {vm_name}@{snapshot_name}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    send_params = {
+        "snapshot": snapshot_name,
+        "source_snapshot": incremental_parent,
+    }
+    send_headers = {
+        "X-Api-Key": destination_api_key,
+        "Content-Type": "application/json",
+    }
+    try:
+        response = requests.post(
+            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
+            timeout=destination_api_timeout,
+            headers=send_headers,
+            params=send_params,
+            json=vm_detail,
+            verify=destination_api_verify_ssl,
+        )
+        response.raise_for_status()
+    except Exception as e:
+        fail(
+            celery,
+            f"Failed to send config: {e}",
+        )
+        return False
+
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully sent snapshot '{snapshot_name}' of VM '{domain}' to remote cluster '{destination_api_uri}'",
+        current=current_stage,
+        total=total_stages,
+    )

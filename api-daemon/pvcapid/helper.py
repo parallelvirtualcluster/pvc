@@ -21,7 +21,9 @@
 
 import flask
 import json
+import logging
 import lxml.etree as etree
+import sys
 
 from re import match
 from requests import get
@@ -38,6 +40,15 @@ import daemon_lib.node as pvc_node
 import daemon_lib.vm as pvc_vm
 import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 #
@@ -1294,20 +1305,46 @@ def vm_flush_locks(zkhandler, vm):
     return output, retcode
 
 
+@ZKConnection(config)
 def vm_snapshot_receive_block(
-    pool, volume, snapshot, size, stream, source_snapshot=None
+    zkhandler, pool, volume, snapshot, size, stream, source_snapshot=None
 ):
+    """
+    Receive an RBD volume from a remote system
+    """
     try:
         import rados
         import rbd
+
+        _, rbd_detail = pvc_ceph.get_list_volume(
+            zkhandler, pool, limit=volume, is_fuzzy=False
+        )
+        if len(rbd_detail) > 0:
+            volume_exists = True
+        else:
+            volume_exists = False
 
         cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
         cluster.connect()
         ioctx = cluster.open_ioctx(pool)
 
-        if not source_snapshot:
+        if not source_snapshot and not volume_exists:
             rbd_inst = rbd.RBD()
             rbd_inst.create(ioctx, volume, size)
+            retflag, retdata = pvc_ceph.add_volume(
+                zkhandler, pool, volume, str(size) + "B", force_flag=True, zk_only=True
+            )
+            if not retflag:
+                ioctx.close()
+                cluster.shutdown()
+
+                if retflag:
+                    retcode = 200
+                else:
+                    retcode = 400
+
+                output = {"message": retdata.replace('"', "'")}
+                return output, retcode
 
         image = rbd.Image(ioctx, volume)
 
@@ -1316,7 +1353,9 @@ def vm_snapshot_receive_block(
 
         if source_snapshot:
             # Receiving diff data
-            print(f"Applying diff between {source_snapshot} and {snapshot}")
+            logger.info(
+                f"Applying diff between {pool}/{volume}@{source_snapshot} and {snapshot}"
+            )
             while True:
                 chunk = stream.read(chunk_size)
                 if not chunk:
@@ -1327,11 +1366,9 @@ def vm_snapshot_receive_block(
                 length = int.from_bytes(chunk[8:16], "big")
                 data = chunk[16 : 16 + length]
                 image.write(data, offset)
-
-            image.create_snap(snapshot)
         else:
             # Receiving full image
-            print(f"Importing full snapshot {snapshot}")
+            logger.info(f"Importing full snapshot {pool}/{volume}@{snapshot}")
             while True:
                 chunk = flask.request.stream.read(chunk_size)
                 if not chunk:
@@ -1339,13 +1376,205 @@ def vm_snapshot_receive_block(
                 image.write(chunk, last_chunk)
                 last_chunk += len(chunk)
 
-            image.create_snap(snapshot)
+        image.create_snap(snapshot)
+        retflag, retdata = pvc_ceph.add_snapshot(
+            zkhandler, pool, volume, snapshot, zk_only=True
+        )
+        if not retflag:
+            image.close()
+            ioctx.close()
+            cluster.shutdown()
+
+            if retflag:
+                retcode = 200
+            else:
+                retcode = 400
+
+            output = {"message": retdata.replace('"', "'")}
+            return output, retcode
 
         image.close()
         ioctx.close()
         cluster.shutdown()
     except Exception as e:
         return {"message": f"Failed to import block device: {e}"}, 400
+
+
+@ZKConnection(config)
+def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=None):
+    """
+    Receive a VM configuration from a remote system
+
+    This function requires some explanation.
+
+    We get a full JSON dump of the VM configuration as provided by `pvc vm info`. This contains all the information we
+    reasonably need to replicate the VM at the given snapshot, including metainformation.
+
+    First, we need to determine if this is an incremental or full send. If it's full, and the VM already exists,
+    this is an issue and we have to error. But this should have already happened with the RBD volumes.
+    """
+    print(vm_config)
+
+    def parse_unified_diff(diff_text, original_text):
+        """
+        Take a unified diff and apply it to an original string
+        """
+        # Split the original string into lines
+        original_lines = original_text.splitlines(keepends=True)
+        patched_lines = []
+        original_idx = 0  # Track position in original lines
+
+        diff_lines = diff_text.splitlines(keepends=True)
+
+        for line in diff_lines:
+            if line.startswith("---") or line.startswith("+++"):
+                # Ignore prefix lines
+                continue
+            if line.startswith("@@"):
+                # Extract line numbers from the diff hunk header
+                hunk_header = line
+                parts = hunk_header.split(" ")
+                original_range = parts[1]
+
+                # Get the starting line number and range length for the original file
+                original_start, _ = map(int, original_range[1:].split(","))
+
+                # Adjust for zero-based indexing
+                original_start -= 1
+
+                # Add any lines between the current index and the next hunk's start
+                while original_idx < original_start:
+                    patched_lines.append(original_lines[original_idx])
+                    original_idx += 1
+
+            elif line.startswith("-"):
+                # This line should be removed from the original, skip it
+                original_idx += 1
+            elif line.startswith("+"):
+                # This line should be added to the patched version, removing the '+'
+                patched_lines.append(line[1:])
+            else:
+                # Context line (unchanged), it has no prefix, add from the original
+                patched_lines.append(original_lines[original_idx])
+                original_idx += 1
+
+        # Add any remaining lines from the original file after the last hunk
+        patched_lines.extend(original_lines[original_idx:])
+
+        return "".join(patched_lines).strip()
+
+    # Get our XML configuration for this snapshot
+    # We take the main XML configuration, then apply the diff for this particular incremental
+    current_snapshot = [s for s in vm_config["snapshots"] if s["name"] == snapshot][0]
+    vm_xml = vm_config["xml"]
+    vm_xml_diff = "\n".join(current_snapshot["xml_diff_lines"])
+    snapshot_vm_xml = parse_unified_diff(vm_xml_diff, vm_xml)
+
+    if (
+        source_snapshot is not None
+        or pvc_vm.searchClusterByUUID(zkhandler, vm_config["uuid"]) is not None
+    ):
+        logger.info(
+            f"Receiving incremental VM configuration for {vm_config['name']}@{snapshot}"
+        )
+
+        # Modify the VM based on our passed detail
+        retcode, retmsg = pvc_vm.modify_vm(
+            zkhandler,
+            vm_config["uuid"],
+            False,
+            snapshot_vm_xml,
+        )
+        retcode, retmsg = pvc_vm.modify_vm_metadata(
+            zkhandler,
+            vm_config["uuid"],
+            None,  # Node limits are left unchanged
+            vm_config["node_selector"],
+            vm_config["node_autostart"],
+            vm_config["profile"],
+            vm_config["migration_method"],
+            vm_config["migration_max_downtime"],
+        )
+
+        current_vm_tags = zkhandler.children(("domain.meta.tags", vm_config["uuid"]))
+        new_vm_tags = [t["name"] for t in vm_config["tags"]]
+        remove_tags = []
+        add_tags = []
+        for tag in vm_config["tags"]:
+            if tag["name"] not in current_vm_tags:
+                add_tags.append((tag["name"], tag["protected"]))
+        for tag in current_vm_tags:
+            if tag not in new_vm_tags:
+                remove_tags.append(tag)
+
+        for tag in add_tags:
+            name, protected = tag
+            pvc_vm.modify_vm_tag(
+                zkhandler, vm_config["uuid"], "add", name, protected=protected
+            )
+        for tag in remove_tags:
+            pvc_vm.modify_vm_tag(zkhandler, vm_config["uuid"], "remove", name)
+    else:
+        logger.info(
+            f"Receiving full VM configuration for {vm_config['name']}@{snapshot}"
+        )
+
+        # Define the VM based on our passed detail
+        retcode, retmsg = pvc_vm.define_vm(
+            zkhandler,
+            snapshot_vm_xml,
+            None,  # Target node is autoselected
+            None,  # Node limits are invalid here so ignore them
+            vm_config["node_selector"],
+            vm_config["node_autostart"],
+            vm_config["migration_method"],
+            vm_config["migration_max_downtime"],
+            vm_config["profile"],
+            vm_config["tags"],
+            "mirror",
+        )
+
+    # Add this snapshot to the VM manually in Zookeeper
+    zkhandler.write(
+        [
+            (
+                (
+                    "domain.snapshots",
+                    vm_config["uuid"],
+                    "domain_snapshot.name",
+                    snapshot,
+                ),
+                snapshot,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    vm_config["uuid"],
+                    "domain_snapshot.timestamp",
+                    snapshot,
+                ),
+                current_snapshot["timestamp"],
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    vm_config["uuid"],
+                    "domain_snapshot.xml",
+                    snapshot,
+                ),
+                snapshot_vm_xml,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    vm_config["uuid"],
+                    "domain_snapshot.rbd_snapshots",
+                    snapshot,
+                ),
+                ",".join(current_snapshot["rbd_snapshots"]),
+            ),
+        ]
+    )
 
 
 #

@@ -1168,11 +1168,14 @@ def get_list_snapshot(zkhandler, target_pool, target_volume, limit=None, is_fuzz
             continue
         if target_volume and volume_name != target_volume:
             continue
-        snapshot_stats = json.loads(
-            zkhandler.read(
-                ("snapshot.stats", f"{pool_name}/{volume_name}/{snapshot_name}")
+        try:
+            snapshot_stats = json.loads(
+                zkhandler.read(
+                    ("snapshot.stats", f"{pool_name}/{volume_name}/{snapshot_name}")
+                )
             )
-        )
+        except Exception:
+            snapshot_stats = []
         if limit:
             try:
                 if re.fullmatch(limit, snapshot_name):
