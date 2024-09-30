@@ -1306,82 +1306,32 @@ def vm_flush_locks(zkhandler, vm):
 
 
 @ZKConnection(config)
-def vm_snapshot_receive_block(
-    zkhandler, pool, volume, snapshot, size, stream, source_snapshot=None
-):
+def vm_snapshot_receive_block_full(zkhandler, pool, volume, snapshot, size, stream):
     """
     Receive an RBD volume from a remote system
     """
-    try:
-        import rados
-        import rbd
+    import rados
+    import rbd
 
-        _, rbd_detail = pvc_ceph.get_list_volume(
-            zkhandler, pool, limit=volume, is_fuzzy=False
-        )
-        if len(rbd_detail) > 0:
-            volume_exists = True
-        else:
-            volume_exists = False
+    _, rbd_detail = pvc_ceph.get_list_volume(
+        zkhandler, pool, limit=volume, is_fuzzy=False
+    )
+    if len(rbd_detail) > 0:
+        volume_exists = True
+    else:
+        volume_exists = False
 
-        cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
-        cluster.connect()
-        ioctx = cluster.open_ioctx(pool)
+    cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
+    cluster.connect()
+    ioctx = cluster.open_ioctx(pool)
 
-        if not source_snapshot and not volume_exists:
-            rbd_inst = rbd.RBD()
-            rbd_inst.create(ioctx, volume, size)
-            retflag, retdata = pvc_ceph.add_volume(
-                zkhandler, pool, volume, str(size) + "B", force_flag=True, zk_only=True
-            )
-            if not retflag:
-                ioctx.close()
-                cluster.shutdown()
-
-                if retflag:
-                    retcode = 200
-                else:
-                    retcode = 400
-
-                output = {"message": retdata.replace('"', "'")}
-                return output, retcode
-
-        image = rbd.Image(ioctx, volume)
-
-        last_chunk = 0
-        chunk_size = 1024 * 1024 * 128
-
-        if source_snapshot:
-            # Receiving diff data
-            logger.info(
-                f"Applying diff between {pool}/{volume}@{source_snapshot} and {snapshot}"
-            )
-            while True:
-                chunk = stream.read(chunk_size)
-                if not chunk:
-                    break
-
-                # Extract the offset and length (8 bytes each) and the data
-                offset = int.from_bytes(chunk[:8], "big")
-                length = int.from_bytes(chunk[8:16], "big")
-                data = chunk[16 : 16 + length]
-                image.write(data, offset)
-        else:
-            # Receiving full image
-            logger.info(f"Importing full snapshot {pool}/{volume}@{snapshot}")
-            while True:
-                chunk = flask.request.stream.read(chunk_size)
-                if not chunk:
-                    break
-                image.write(chunk, last_chunk)
-                last_chunk += len(chunk)
-
-        image.create_snap(snapshot)
-        retflag, retdata = pvc_ceph.add_snapshot(
-            zkhandler, pool, volume, snapshot, zk_only=True
+    if not volume_exists:
+        rbd_inst = rbd.RBD()
+        rbd_inst.create(ioctx, volume, size)
+        retflag, retdata = pvc_ceph.add_volume(
+            zkhandler, pool, volume, str(size) + "B", force_flag=True, zk_only=True
         )
         if not retflag:
-            image.close()
             ioctx.close()
             cluster.shutdown()
 
@@ -1393,11 +1343,90 @@ def vm_snapshot_receive_block(
             output = {"message": retdata.replace('"', "'")}
             return output, retcode
 
-        image.close()
-        ioctx.close()
-        cluster.shutdown()
-    except Exception as e:
-        return {"message": f"Failed to import block device: {e}"}, 400
+    image = rbd.Image(ioctx, volume)
+
+    last_chunk = 0
+    chunk_size = 1024 * 1024 * 64
+
+    logger.info(f"Importing full snapshot {pool}/{volume}@{snapshot}")
+    while True:
+        chunk = flask.request.stream.read(chunk_size)
+        if not chunk:
+            break
+        image.write(chunk, last_chunk)
+        last_chunk += len(chunk)
+
+    image.close()
+    ioctx.close()
+    cluster.shutdown()
+
+
+@ZKConnection(config)
+def vm_snapshot_receive_block_diff(
+    zkhandler, pool, volume, snapshot, source_snapshot, stream
+):
+    """
+    Receive an RBD volume from a remote system
+    """
+    import rados
+    import rbd
+
+    cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
+    cluster.connect()
+    ioctx = cluster.open_ioctx(pool)
+    image = rbd.Image(ioctx, volume)
+
+    logger.info(
+        f"Applying diff between {pool}/{volume}@{source_snapshot} and {snapshot}"
+    )
+
+    chunk = stream.read()
+
+    print(type(chunk))
+    print(len(chunk))
+
+    # Extract the offset and length (8 bytes each) and the data
+    offset = int.from_bytes(chunk[:8], "big")
+    length = int.from_bytes(chunk[8:16], "big")
+    data = chunk[16 : 16 + length]
+    print(f"Writing {length} bytes to {offset}")
+    written = image.write(data, offset)
+    print(f"Wrote {written} bytes")
+
+    image.close()
+    ioctx.close()
+    cluster.shutdown()
+
+
+@ZKConnection(config)
+def vm_snapshot_receive_block_createsnap(zkhandler, pool, volume, snapshot):
+    """
+    Create the snapshot of a remote volume
+    """
+    import rados
+    import rbd
+
+    cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
+    cluster.connect()
+    ioctx = cluster.open_ioctx(pool)
+    image = rbd.Image(ioctx, volume)
+    image.create_snap(snapshot)
+    image.close()
+    ioctx.close()
+    cluster.shutdown()
+
+    retflag, retdata = pvc_ceph.add_snapshot(
+        zkhandler, pool, volume, snapshot, zk_only=True
+    )
+    if not retflag:
+
+        if retflag:
+            retcode = 200
+        else:
+            retcode = 400
+
+        output = {"message": retdata.replace('"', "'")}
+        return output, retcode
 
 
 @ZKConnection(config)

@@ -3717,16 +3717,12 @@ class API_VM_Snapshot_Receive_Block(Resource):
                 "name": "size",
                 "required": True,
             },
-            {
-                "name": "source_snapshot",
-                "required": False,
-            },
         ]
     )
     @Authenticator
     def post(self, vm, reqargs):
         """
-        Receive a snapshot of a single RBD volume from another PVC cluster; may be full or incremental
+        Receive a full snapshot of a single RBD volume from another PVC cluster
 
         NOTICE: This is an API-internal endpoint used by /vm/<vm>/snapshot/send; it should never be called by a client.
         ---
@@ -3753,11 +3749,6 @@ class API_VM_Snapshot_Receive_Block(Resource):
             type: integer
             required: true
             description: The size in bytes of the Ceph RBD volume
-          - in: query
-            name: source_snapshot
-            type: string
-            required: false
-            description: The name of the destination Ceph RBD volume snapshot parent for incremental transfers
         responses:
           200:
             description: OK
@@ -3775,13 +3766,151 @@ class API_VM_Snapshot_Receive_Block(Resource):
               type: object
               id: Message
         """
-        return api_helper.vm_snapshot_receive_block(
+        return api_helper.vm_snapshot_receive_block_full(
             reqargs.get("pool"),
             reqargs.get("volume"),
             reqargs.get("snapshot"),
             int(reqargs.get("size")),
             flask.request.stream,
-            source_snapshot=reqargs.get("source_snapshot"),
+        )
+
+    @RequestParser(
+        [
+            {
+                "name": "pool",
+                "required": True,
+            },
+            {
+                "name": "volume",
+                "required": True,
+            },
+            {
+                "name": "snapshot",
+                "required": True,
+            },
+            {
+                "name": "source_snapshot",
+                "required": True,
+            },
+        ]
+    )
+    @Authenticator
+    def put(self, vm, reqargs):
+        """
+        Receive a single diff element from a snapshot of a single RBD volume from another PVC cluster
+
+        NOTICE: This is an API-internal endpoint used by /vm/<vm>/snapshot/send; it should never be called by a client.
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: pool
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD data pool
+          - in: query
+            name: volume
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD volume
+          - in: query
+            name: snapshot
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD volume snapshot
+          - in: query
+            name: source_snapshot
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD volume snapshot parent
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.vm_snapshot_receive_block_diff(
+            reqargs.get("pool"),
+            reqargs.get("volume"),
+            reqargs.get("snapshot"),
+            reqargs.get("source_snapshot"),
+            flask.request.stream,
+        )
+
+    @RequestParser(
+        [
+            {
+                "name": "pool",
+                "required": True,
+            },
+            {
+                "name": "volume",
+                "required": True,
+            },
+            {
+                "name": "snapshot",
+                "required": True,
+            },
+        ]
+    )
+    @Authenticator
+    def patch(self, vm, reqargs):
+        """
+        Create the block snapshot at snapshot of volume
+
+        NOTICE: This is an API-internal endpoint used by /vm/<vm>/snapshot/send; it should never be called by a client.
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: pool
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD data pool
+          - in: query
+            name: volume
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD volume
+          - in: query
+            name: snapshot
+            type: string
+            required: true
+            description: The name of the destination Ceph RBD volume snapshot
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.vm_snapshot_receive_block_createsnap(
+            reqargs.get("pool"),
+            reqargs.get("volume"),
+            reqargs.get("snapshot"),
         )
 
 

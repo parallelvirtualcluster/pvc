@@ -3269,7 +3269,7 @@ def vm_worker_send_snapshot(
         verify=destination_api_verify_ssl,
     )
     destination_vm_status = response.json()
-    if len(destination_vm_status) > 0:
+    if type(destination_vm_status) is list and len(destination_vm_status) > 0:
         destination_vm_status = destination_vm_status[0]
     else:
         destination_vm_status = {}
@@ -3358,9 +3358,42 @@ def vm_worker_send_snapshot(
     # Begin send, set stages
     total_stages = (
         2
-        + (3 * len(snapshot_rbdsnaps))
+        + (2 * len(snapshot_rbdsnaps))
         + (len(snapshot_rbdsnaps) if current_destination_vm_state is None else 0)
     )
+
+    current_stage += 1
+    update(
+        celery,
+        f"Sending VM configuration for {vm_name}@{snapshot_name}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    send_params = {
+        "snapshot": snapshot_name,
+        "source_snapshot": incremental_parent,
+    }
+    send_headers = {
+        "X-Api-Key": destination_api_key,
+        "Content-Type": "application/json",
+    }
+    try:
+        response = requests.post(
+            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
+            timeout=destination_api_timeout,
+            headers=send_headers,
+            params=send_params,
+            json=vm_detail,
+            verify=destination_api_verify_ssl,
+        )
+        response.raise_for_status()
+    except Exception as e:
+        fail(
+            celery,
+            f"Failed to send config: {e}",
+        )
+        return False
 
     # Create the block devices on the remote side if this is a new VM send
     for rbd_detail in [r for r in vm_detail["disks"] if r["type"] == "rbd"]:
@@ -3429,30 +3462,85 @@ def vm_worker_send_snapshot(
         ioctx = cluster.open_ioctx(pool)
         image = rbd.Image(ioctx, name=volume, snapshot=snapshot_name, read_only=True)
         size = image.size()
-        chunk_size_mb = 128
+        chunk_size_mb = 64
 
         if incremental_parent is not None:
             # Diff between incremental_parent and snapshot
-            celery_message = f"Sending diff between {incremental_parent} and {snapshot_name} for {rbd_name}"
-
-            def diff_chunker():
-                def diff_cb(offset, length, exists):
-                    """Callback to handle diff regions"""
-                    if exists:
-                        data = image.read(offset, length)
-                        yield (
-                            offset.to_bytes(8, "big") + length.to_bytes(8, "big") + data
-                        )
-
-                image.set_snap(incremental_parent)
-                image.diff_iterate(0, size, incremental_parent, diff_cb)
-
-            data_stream = diff_chunker()
+            celery_message = (
+                f"Sending diff {incremental_parent}>{snapshot_name} for {rbd_name}"
+            )
         else:
             # Full image transfer
             celery_message = f"Sending full image of {rbd_name}@{snapshot_name}"
 
-            def chunker():
+        current_stage += 1
+        update(
+            celery,
+            celery_message,
+            current=current_stage,
+            total=total_stages,
+        )
+
+        send_headers = {
+            "X-Api-Key": destination_api_key,
+            "Content-Type": "application/octet-stream",
+            "Transfer-Encoding": None,  # Disable chunked transfer encoding
+        }
+
+        if incremental_parent is not None:
+            send_params = {
+                "pool": pool,
+                "volume": volume,
+                "snapshot": snapshot_name,
+                "source_snapshot": incremental_parent,
+            }
+
+            last_chunk_time = time.time()
+
+            def diff_cb_send(offset, length, exists):
+                nonlocal last_chunk_time
+                if exists:
+                    data = image.read(offset, length)
+                    block = offset.to_bytes(8, "big") + length.to_bytes(8, "big") + data
+                    response = requests.put(
+                        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                        timeout=destination_api_timeout,
+                        headers=send_headers,
+                        params=send_params,
+                        data=block,
+                        verify=destination_api_verify_ssl,
+                    )
+                    response.raise_for_status()
+
+                    current_chunk_time = time.time()
+                    chunk_time = current_chunk_time - last_chunk_time
+                    last_chunk_time = current_chunk_time
+                    chunk_speed = round(4 / chunk_time, 1)
+                    update(
+                        celery,
+                        celery_message + f" ({chunk_speed} MB/s)",
+                        current=current_stage,
+                        total=total_stages,
+                    )
+
+            try:
+                image.set_snap(snapshot_name)
+                image.diff_iterate(
+                    0, size, incremental_parent, diff_cb_send, whole_object=True
+                )
+            except Exception:
+                fail(
+                    celery,
+                    f"Failed to send snapshot: {response.json()['message']}",
+                )
+                return False
+            finally:
+                image.close()
+                ioctx.close()
+                cluster.shutdown()
+        else:
+
+            def full_chunker():
                 chunk_size = 1024 * 1024 * chunk_size_mb
                 current_chunk = 0
                 last_chunk_time = time.time()
@@ -3471,35 +3559,46 @@ def vm_worker_send_snapshot(
                         total=total_stages,
                     )
 
-            data_stream = chunker()
+            send_params = {
+                "pool": pool,
+                "volume": volume,
+                "snapshot": snapshot_name,
+                "size": size,
+                "source_snapshot": incremental_parent,
+            }
 
-        current_stage += 1
-        update(
-            celery,
-            celery_message,
-            current=current_stage,
-            total=total_stages,
-        )
+            try:
+                response = requests.post(
+                    f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                    timeout=destination_api_timeout,
+                    headers=send_headers,
+                    params=send_params,
+                    data=full_chunker(),
+                    verify=destination_api_verify_ssl,
+                )
+                response.raise_for_status()
+            except Exception:
+                fail(
+                    celery,
+                    f"Failed to send snapshot: {response.json()['message']}",
+                )
+                return False
+            finally:
+                image.close()
+                ioctx.close()
+                cluster.shutdown()
 
         send_params = {
             "pool": pool,
             "volume": volume,
             "snapshot": snapshot_name,
-            "size": size,
-            "source_snapshot": incremental_parent,
-        }
-        send_headers = {
-            "X-Api-Key": destination_api_key,
-            "Content-Type": "application/octet-stream",
-            "Transfer-Encoding": None,  # Disable chunked transfer encoding
         }
         try:
-            response = requests.post(
+            response = requests.patch(
                 f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
                 timeout=destination_api_timeout,
                 headers=send_headers,
                 params=send_params,
-                data=data_stream,
                 verify=destination_api_verify_ssl,
             )
             response.raise_for_status()
@@ -3513,39 +3612,6 @@ def vm_worker_send_snapshot(
             image.close()
             ioctx.close()
             cluster.shutdown()
-
-    current_stage += 1
-    update(
-        celery,
-        f"Sending VM configuration for {vm_name}@{snapshot_name}",
-        current=current_stage,
-        total=total_stages,
-    )
-
-    send_params = {
-        "snapshot": snapshot_name,
-        "source_snapshot": incremental_parent,
-    }
-    send_headers = {
-        "X-Api-Key": destination_api_key,
-        "Content-Type": "application/json",
-    }
-    try:
-        response = requests.post(
-            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
-            timeout=destination_api_timeout,
-            headers=send_headers,
-            params=send_params,
-            json=vm_detail,
-            verify=destination_api_verify_ssl,
-        )
-        response.raise_for_status()
-    except Exception as e:
-        fail(
-            celery,
-            f"Failed to send config: {e}",
-        )
-        return False
 
     current_stage += 1
     return finish(
