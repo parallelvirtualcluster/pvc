@@ -3771,7 +3771,7 @@ class API_VM_Snapshot_Receive_Block(Resource):
             reqargs.get("volume"),
             reqargs.get("snapshot"),
             int(reqargs.get("size")),
-            flask.request.stream,
+            flask.request,
         )
 
     @RequestParser(
@@ -3846,7 +3846,7 @@ class API_VM_Snapshot_Receive_Block(Resource):
             reqargs.get("volume"),
             reqargs.get("snapshot"),
             reqargs.get("source_snapshot"),
-            flask.request.stream,
+            flask.request,
         )
 
     @RequestParser(

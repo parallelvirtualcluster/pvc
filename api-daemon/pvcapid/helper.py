@@ -1306,7 +1306,7 @@ def vm_flush_locks(zkhandler, vm):
 
 
 @ZKConnection(config)
-def vm_snapshot_receive_block_full(zkhandler, pool, volume, snapshot, size, stream):
+def vm_snapshot_receive_block_full(zkhandler, pool, volume, snapshot, size, request):
     """
     Receive an RBD volume from a remote system
     """
@@ -1350,7 +1350,7 @@ def vm_snapshot_receive_block_full(zkhandler, pool, volume, snapshot, size, stre
 
     logger.info(f"Importing full snapshot {pool}/{volume}@{snapshot}")
     while True:
-        chunk = flask.request.stream.read(chunk_size)
+        chunk = request.stream.read(chunk_size)
         if not chunk:
             break
         image.write(chunk, last_chunk)
@@ -1360,10 +1360,12 @@ def vm_snapshot_receive_block_full(zkhandler, pool, volume, snapshot, size, stre
     ioctx.close()
     cluster.shutdown()
 
+    return {"message": "Successfully received RBD block device"}, 200
+
 
 @ZKConnection(config)
 def vm_snapshot_receive_block_diff(
-    zkhandler, pool, volume, snapshot, source_snapshot, stream
+    zkhandler, pool, volume, snapshot, source_snapshot, request
 ):
     """
     Receive an RBD volume from a remote system
@@ -1376,21 +1378,28 @@ def vm_snapshot_receive_block_diff(
     ioctx = cluster.open_ioctx(pool)
     image = rbd.Image(ioctx, volume)
 
-    logger.info(
-        f"Applying diff between {pool}/{volume}@{source_snapshot} and {snapshot}"
-    )
+    if len(request.files) > 0:
+        logger.info(f"Applying {len(request.files)} RBD diff chunks for {snapshot}")
 
-    chunk = stream.read()
-
-    # Extract the offset and length (8 bytes each) and the data
-    offset = int.from_bytes(chunk[:8], "big")
-    length = int.from_bytes(chunk[8:16], "big")
-    data = chunk[16 : 16 + length]
-    image.write(data, offset)
+        for i in range(len(request.files)):
+            object_key = f"object_{i}"
+            if object_key in request.files:
+                object_data = request.files[object_key].read()
+                offset = int.from_bytes(object_data[:8], "big")
+                length = int.from_bytes(object_data[8:16], "big")
+                data = object_data[16 : 16 + length]
+                logger.info(f"Applying RBD diff chunk at {offset} ({length} bytes)")
+                image.write(data, offset)
+    else:
+        return {"message": "No data received"}, 400
 
     image.close()
     ioctx.close()
     cluster.shutdown()
+
+    return {
+        "message": f"Successfully received {len(request.files)} RBD diff chunks"
+    }, 200
 
 
 @ZKConnection(config)
@@ -1422,6 +1431,8 @@ def vm_snapshot_receive_block_createsnap(zkhandler, pool, volume, snapshot):
 
         output = {"message": retdata.replace('"', "'")}
         return output, retcode
+
+    return {"message": "Successfully received VM configuration data"}, 200
 
 
 @ZKConnection(config)
