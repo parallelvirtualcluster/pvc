@@ -3386,6 +3386,9 @@ def vm_worker_send_snapshot(
         return False
 
     # Create the block devices on the remote side if this is a new VM send
+    block_t_start = time.time()
+    block_total_mb = 0
+
     for rbd_detail in [r for r in vm_detail["disks"] if r["type"] == "rbd"]:
         rbd_name = rbd_detail["name"]
         pool, volume = rbd_name.split("/")
@@ -3449,7 +3452,7 @@ def vm_worker_send_snapshot(
         ioctx = cluster.open_ioctx(pool)
         image = rbd.Image(ioctx, name=volume, snapshot=snapshot_name, read_only=True)
         size = image.size()
-        chunk_size_mb = 64
+        chunk_size_mb = 1024
 
         if incremental_parent is not None:
             # Diff between incremental_parent and snapshot
@@ -3555,6 +3558,7 @@ def vm_worker_send_snapshot(
                 image.diff_iterate(
                     0, size, incremental_parent, diff_cb_count, whole_object=True
                 )
+                block_total_mb += total_chunks * 4
                 image.diff_iterate(
                     0, size, incremental_parent, diff_cb_send, whole_object=True
                 )
@@ -3576,6 +3580,7 @@ def vm_worker_send_snapshot(
         else:
 
             def full_chunker():
+                nonlocal block_total_mb
                 chunk_size = 1024 * 1024 * chunk_size_mb
                 current_chunk = 0
                 last_chunk_time = time.time()
@@ -3583,6 +3588,7 @@ def vm_worker_send_snapshot(
                     chunk = image.read(current_chunk, chunk_size)
                     yield chunk
                     current_chunk += chunk_size
+                    block_total_mb += len(chunk) / 1024 / 1024
                     current_chunk_time = time.time()
                     chunk_time = current_chunk_time - last_chunk_time
                     last_chunk_time = current_chunk_time
@@ -3643,10 +3649,13 @@ def vm_worker_send_snapshot(
             ioctx.close()
             cluster.shutdown()
 
+    block_t_end = time.time()
+    block_mbps = round(block_total_mb / (block_t_end - block_t_start), 1)
+
     current_stage += 1
     return finish(
         celery,
-        f"Successfully sent snapshot '{snapshot_name}' of VM '{domain}' to remote cluster '{destination_api_uri}'",
+        f"Successfully sent snapshot '{snapshot_name}' of VM '{domain}' to remote cluster '{destination_api_uri}' (average {block_mbps} MB/s)",
         current=current_stage,
         total=total_stages,
     )

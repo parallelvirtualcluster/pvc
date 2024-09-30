@@ -1346,7 +1346,7 @@ def vm_snapshot_receive_block_full(zkhandler, pool, volume, snapshot, size, requ
     image = rbd.Image(ioctx, volume)
 
     last_chunk = 0
-    chunk_size = 1024 * 1024 * 64
+    chunk_size = 1024 * 1024 * 1024
 
     logger.info(f"Importing full snapshot {pool}/{volume}@{snapshot}")
     while True:
