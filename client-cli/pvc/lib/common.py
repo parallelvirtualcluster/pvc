@@ -83,7 +83,7 @@ class UploadProgressBar(object):
         else:
             self.end_suffix = ""
 
-        self.bar = click.progressbar(length=self.length, show_eta=True)
+        self.bar = click.progressbar(length=self.length, width=20, show_eta=True)
 
     def update(self, monitor):
         bytes_cur = monitor.bytes_read

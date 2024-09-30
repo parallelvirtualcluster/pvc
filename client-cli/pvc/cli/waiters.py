@@ -107,7 +107,7 @@ def wait_for_celery_task(CLI_CONFIG, task_detail, start_late=False):
 
     # Start following the task state, updating progress as we go
     total_task = task_status.get("total")
-    with progressbar(length=total_task, show_eta=False) as bar:
+    with progressbar(length=total_task, width=20, show_eta=False) as bar:
         last_task = 0
         maxlen = 21
         echo(
