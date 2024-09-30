@@ -1092,17 +1092,17 @@ def rollback_snapshot(zkhandler, pool, volume, name):
             ),
         )
 
-        # 1. Roll back the snapshot
-        retcode, stdout, stderr = common.run_os_command(
-            "rbd snap rollback {}/{}@{}".format(pool, volume, name)
+    # 1. Roll back the snapshot
+    retcode, stdout, stderr = common.run_os_command(
+        "rbd snap rollback {}/{}@{}".format(pool, volume, name)
+    )
+    if retcode:
+        return (
+            False,
+            'ERROR: Failed to roll back RBD volume "{}" in pool "{}" to snapshot "{}": {}'.format(
+                volume, pool, name, stderr
+            ),
         )
-        if retcode:
-            return (
-                False,
-                'ERROR: Failed to roll back RBD volume "{}" in pool "{}" to snapshot "{}": {}'.format(
-                    volume, pool, name, stderr
-                ),
-            )
 
     return True, 'Rolled back RBD volume "{}" in pool "{}" to snapshot "{}".'.format(
         volume, pool, name
