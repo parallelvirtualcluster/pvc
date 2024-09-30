@@ -1382,16 +1382,11 @@ def vm_snapshot_receive_block_diff(
 
     chunk = stream.read()
 
-    print(type(chunk))
-    print(len(chunk))
-
     # Extract the offset and length (8 bytes each) and the data
     offset = int.from_bytes(chunk[:8], "big")
     length = int.from_bytes(chunk[8:16], "big")
     data = chunk[16 : 16 + length]
-    print(f"Writing {length} bytes to {offset}")
-    written = image.write(data, offset)
-    print(f"Wrote {written} bytes")
+    image.write(data, offset)
 
     image.close()
     ioctx.close()
