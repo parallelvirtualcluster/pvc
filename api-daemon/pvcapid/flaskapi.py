@@ -6794,7 +6794,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
           - storage / ceph
         parameters:
           - in: query
-            name: size
+            name: new_size
             type: string
             required: false
             description: The new volume size in bytes (or with a metric suffix, i.e. k/M/G/T); must be greater than the previous size (shrinking not supported)
