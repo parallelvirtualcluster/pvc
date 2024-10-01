@@ -2068,17 +2068,19 @@ def cli_vm_snapshot_send(
     wait_flag,
 ):
     """
-    Send the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the PVC cluster DESTINATION.
+    Send the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the remote PVC cluster DESTINATION.
 
-    DOMAIN may be a UUID or name.
-
-    DESTINATION may either be a configured PVC connection name in this CLI instance (i.e. a valid local argument to "--connection"), or a full API URL, including port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
+    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
 
     The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
 
     By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify one with the "-p"/"--detination-pool" option.
 
-    Incremental sends are possible by specifying the "-i"/"--incremental-parent" option along with a parent snapshot name. To correctly receive, that parent snapshot must exist on DESTINATION.
+    Incremental sends are possible by specifying the "-i"/"--incremental-parent" option along with a parent snapshot name. To correctly receive, that parent snapshot must exist on DESTINATION. Subsequent sends after the first do not have to be incremental, but an incremental send is likely to perform better than a full send if the VM experiences few writes.
+
+    WARNING: Once sent, the VM will be in the state "mirror" on the remote cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the remote side and sent back or data will be inconsistent between the instances. Only VMs in the "mirror" state can accept new sends.
+
+    WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
     """
 
     connections_config = get_store(CLI_CONFIG["store_path"])
