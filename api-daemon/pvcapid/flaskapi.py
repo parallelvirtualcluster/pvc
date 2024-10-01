@@ -2803,8 +2803,20 @@ class API_VM_Locks(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
+              properties:
+                task_id:
+                  type: string
+                  description: The internal Celery job ID of the task
+                task_name:
+                  type: string
+                  description: The internal Celery job task name
+                run_on:
+                  type: string
+                  description: The worker daemon instance assigned to run the task
+
         """
         vm_node_detail, retcode = api_helper.vm_node(vm)
         if retcode == 200:
@@ -2927,8 +2939,9 @@ class API_VM_Device(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -2981,8 +2994,9 @@ class API_VM_Device(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -3237,8 +3251,9 @@ class API_VM_Snapshot(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Execution error
             schema:
@@ -3295,8 +3310,9 @@ class API_VM_Snapshot(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Execution error
             schema:
@@ -3359,8 +3375,9 @@ class API_VM_Snapshot_Rollback(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Execution error
             schema:
@@ -3443,8 +3460,9 @@ class API_VM_Snapshot_Export(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Execution error
             schema:
@@ -3532,8 +3550,9 @@ class API_VM_Snapshot_Import(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Execution error
             schema:
@@ -3649,8 +3668,9 @@ class API_VM_Snapshot_Send(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Execution error
             schema:
@@ -4025,8 +4045,9 @@ class API_VM_Autobackup_Root(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -5515,8 +5536,9 @@ class API_Storage_Ceph_Benchmark(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -5651,8 +5673,9 @@ class API_Storage_Ceph_OSDDB_Root(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -5850,8 +5873,9 @@ class API_Storage_Ceph_OSD_Root(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -5965,8 +5989,9 @@ class API_Storage_Ceph_OSD_Element(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -6023,8 +6048,9 @@ class API_Storage_Ceph_OSD_Element(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
@@ -6089,8 +6115,9 @@ class API_Storage_Ceph_OSD_Element(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           404:
             description: Not found
             schema:
@@ -9790,8 +9817,9 @@ class API_Provisioner_Create_Root(Resource):
           202:
             description: Accepted
             schema:
-                type: string
-                description: The Celery job ID of the task
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
           400:
             description: Bad request
             schema:
