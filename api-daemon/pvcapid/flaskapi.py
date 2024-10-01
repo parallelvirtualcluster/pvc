@@ -1985,7 +1985,7 @@ class API_VM_Root(Resource):
     @Authenticator
     def post(self, reqargs):
         """
-        Create a new virtual machine
+        Define/create a new virtual machine
         ---
         tags:
           - vm
@@ -2143,8 +2143,10 @@ class API_VM_Element(Resource):
     @Authenticator
     def post(self, vm, reqargs):
         """
-        Create new {vm}
+        Define/create a new virtual machine
+
         Note: The name {vm} is ignored; only the "name" value from the Libvirt XML is used
+
         This endpoint is identical to "POST /api/v1/vm"
         ---
         tags:
