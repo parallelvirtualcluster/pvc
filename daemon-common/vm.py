@@ -3352,11 +3352,7 @@ def vm_worker_send_snapshot(
             return False
 
     # Begin send, set stages
-    total_stages = (
-        2
-        + (2 * len(snapshot_rbdsnaps))
-        + (len(snapshot_rbdsnaps) if current_destination_vm_state is None else 0)
-    )
+    total_stages = 2 + (3 * len(snapshot_rbdsnaps))
 
     current_stage += 1
     update(
@@ -3417,34 +3413,55 @@ def vm_worker_send_snapshot(
             return False
 
         try:
-            _ = ceph.format_bytes_fromhuman(retdata[0]["stats"]["size"])
+            local_volume_size = ceph.format_bytes_fromhuman(retdata[0]["stats"]["size"])
         except Exception as e:
             error_message = f"Failed to get volume size for {rbd_name}: {e}"
 
         if destination_storage_pool is not None:
             pool = destination_storage_pool
 
-        if current_destination_vm_state is None:
-            current_stage += 1
-            update(
-                celery,
-                f"Checking for remote volume {rbd_name}",
-                current=current_stage,
-                total=total_stages,
-            )
+        current_stage += 1
+        update(
+            celery,
+            f"Checking remote volume {rbd_name} for compliance",
+            current=current_stage,
+            total=total_stages,
+        )
 
-            # Check if the volume exists on the target
-            response = session.get(
-                f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
-                params=None,
-                data=None,
+        # Check if the volume exists on the target
+        response = session.get(
+            f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
+            params=None,
+            data=None,
+        )
+        if response.status_code != 404 and current_destination_vm_state is None:
+            fail(
+                celery,
+                f"Remote storage pool {pool} already contains volume {volume}",
             )
-            if response.status_code != 404:
-                fail(
-                    celery,
-                    f"Remote storage pool {pool} already contains volume {volume}",
+            return False
+
+        if current_destination_vm_state is not None:
+            try:
+                remote_volume_size = ceph.format_bytes_fromhuman(
+                    response.json()[0]["stats"]["size"]
                 )
+            except Exception as e:
+                error_message = f"Failed to get volume size for remote {rbd_name}: {e}"
+                fail(celery, error_message)
                 return False
+
+            if local_volume_size != remote_volume_size:
+                response = session.put(
+                    f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
+                    params={"new_size": local_volume_size, "force": True},
+                )
+                if response.status_code != 200:
+                    fail(
+                        celery,
+                        "Failed to resize remote volume to match local volume",
+                    )
+                    return False
 
         # Send the volume to the remote
         cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
