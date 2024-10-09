@@ -4923,7 +4923,7 @@ def vm_worker_promote_mirror(
         response = session.post(
             f"{destination_api_uri}/vm/{vm_name}/state",
             headers={"Content-Type": "application/octet-stream"},
-            params={"state": "start", "wait": True},
+            params={"state": "start", "wait": True, "force": True},
         )
         response.raise_for_status()
     except Exception:
