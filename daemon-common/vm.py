@@ -4476,13 +4476,14 @@ def vm_worker_promote_mirror(
         total=total_stages,
     )
 
-    retcode, retmsg = shutdown_vm(zkhandler, domain, wait=True)
-    if not retcode:
-        fail(
-            celery,
-            "Failed to shut down VM",
-        )
-        return False
+    if vm_detail["state"] in ["start"]:
+        retcode, retmsg = shutdown_vm(zkhandler, domain, wait=True)
+        if not retcode:
+            fail(
+                celery,
+                "Failed to shut down VM",
+            )
+            return False
 
     #
     # 2. Create snapshot
