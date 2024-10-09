@@ -2285,7 +2285,7 @@ def vm_worker_remove_snapshot(
     )
     rbd_snapshots = _snapshots.split(",")
 
-    total_stages = 2 + len(rbd_snapshots)
+    total_stages += 1 + len(rbd_snapshots)
 
     for snap in rbd_snapshots:
         current_stage += 1
@@ -2375,7 +2375,7 @@ def vm_worker_rollback_snapshot(zkhandler, celery, domain, snapshot_name):
     )
     rbd_snapshots = _snapshots.split(",")
 
-    total_stages = 2 + len(rbd_snapshots)
+    total_stages += 1 + len(rbd_snapshots)
 
     for snap in rbd_snapshots:
         current_stage += 1
@@ -2531,7 +2531,7 @@ def vm_worker_export_snapshot(
     )
     snapshot_rbdsnaps = snapshot_rbdsnaps.split(",")
 
-    total_stages = 2 + len(snapshot_rbdsnaps)
+    total_stages += 1 + len(snapshot_rbdsnaps)
 
     # Create destination directory
     export_target_path = f"{export_path}/{domain}/{snapshot_name}/images"
@@ -2759,8 +2759,7 @@ def vm_worker_import_snapshot(
             )
             return False
 
-    total_stages = 2
-    total_stages += 2 * len(export_source_details.get("export_files"))
+    total_stages += 3 * len(export_source_details.get("export_files"))
     if incremental_parent is not None:
         total_stages += 3
         total_stages += len(export_source_parent_details.get("export_files"))
@@ -3376,7 +3375,7 @@ def vm_worker_send_snapshot(
             return False
 
     # Begin send, set stages
-    total_stages = 2 + (3 * len(snapshot_rbdsnaps))
+    total_stages += 1 + (3 * len(snapshot_rbdsnaps))
 
     current_stage += 1
     update(
@@ -3858,7 +3857,7 @@ def vm_worker_create_mirror(
     # Snapshot creation stages
     total_stages += 1 + len(rbd_list)
     # Snapshot sending stages
-    total_stages = 2 + (3 * len(rbd_list))
+    total_stages += 2 + (3 * len(rbd_list))
 
     #
     # 1. Create snapshot
@@ -4454,7 +4453,7 @@ def vm_worker_promote_mirror(
     # Snapshot creation stages
     total_stages += 1 + len(rbd_list)
     # Snapshot sending stages
-    total_stages = 2 + (3 * len(rbd_list))
+    total_stages += 1 + (3 * len(rbd_list))
     # Cleanup stages
     total_stages += 2
 
