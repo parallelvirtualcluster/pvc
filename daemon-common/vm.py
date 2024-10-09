@@ -3857,7 +3857,7 @@ def vm_worker_create_mirror(
     # Snapshot creation stages
     total_stages += 1 + len(rbd_list)
     # Snapshot sending stages
-    total_stages += 2 + (3 * len(rbd_list))
+    total_stages += 1 + (3 * len(rbd_list))
 
     #
     # 1. Create snapshot
