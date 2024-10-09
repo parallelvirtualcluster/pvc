@@ -4204,7 +4204,7 @@ def vm_worker_create_mirror(
             except Exception:
                 fail(
                     celery,
-                    f"Failed to send snapshot: {response.json()['message']}",
+                    f"Failed to create mirror: {response.json()['message']}",
                 )
                 return False
             finally:
@@ -4253,7 +4253,7 @@ def vm_worker_create_mirror(
             except Exception:
                 fail(
                     celery,
-                    f"Failed to send snapshot: {response.json()['message']}",
+                    f"Failed to create mirror: {response.json()['message']}",
                 )
                 return False
             finally:
@@ -4275,7 +4275,7 @@ def vm_worker_create_mirror(
         except Exception:
             fail(
                 celery,
-                f"Failed to send snapshot: {response.json()['message']}",
+                f"Failed to create mirror: {response.json()['message']}",
             )
             return False
         finally:
@@ -4825,7 +4825,7 @@ def vm_worker_promote_mirror(
             except Exception:
                 fail(
                     celery,
-                    f"Failed to send snapshot: {response.json()['message']}",
+                    f"Failed to promote mirror: {response.json()['message']}",
                 )
                 return False
             finally:
@@ -4874,7 +4874,7 @@ def vm_worker_promote_mirror(
             except Exception:
                 fail(
                     celery,
-                    f"Failed to send snapshot: {response.json()['message']}",
+                    f"Failed to promote mirror: {response.json()['message']}",
                 )
                 return False
             finally:
@@ -4896,7 +4896,7 @@ def vm_worker_promote_mirror(
         except Exception:
             fail(
                 celery,
-                f"Failed to send snapshot: {response.json()['message']}",
+                f"Failed to promote mirror: {response.json()['message']}",
             )
             return False
         finally:
@@ -4929,7 +4929,7 @@ def vm_worker_promote_mirror(
     except Exception:
         fail(
             celery,
-            f"Failed to send snapshot: {response.json()['message']}",
+            f"Failed to promote mirror: {response.json()['message']}",
         )
         return False
 
