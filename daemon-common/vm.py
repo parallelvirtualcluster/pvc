@@ -3959,11 +3959,14 @@ def vm_worker_create_mirror(
     #
 
     # Determine if there's a valid shared snapshot to send an incremental diff from
-    local_snapshots = {s["name"] for s in vm_detail["snapshots"]}
-    remote_snapshots = {s["name"] for s in destination_vm_detail["snapshots"]}
-    incremental_parent = next(
-        (s for s in local_snapshots if s in remote_snapshots), None
-    )
+    if destination_vm_detail:
+        local_snapshots = {s["name"] for s in vm_detail["snapshots"]}
+        remote_snapshots = {s["name"] for s in destination_vm_detail["snapshots"]}
+        incremental_parent = next(
+            (s for s in local_snapshots if s in remote_snapshots), None
+        )
+    else:
+        incremental_parent = None
 
     current_stage += 1
     update(
