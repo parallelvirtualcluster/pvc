@@ -2112,6 +2112,10 @@ def cli_vm_snapshot_send(
         )
         destination_api_key = destination_cluster_config["api_key"]
     else:
+        if "http" not in destination:
+            finish(
+                False, "ERROR: A valid destination cluster or URI must be specified!"
+            )
         destination_api_uri = destination
         destination_api_key = destination_api_key
 
@@ -2213,6 +2217,10 @@ def cli_vm_mirror_create(
         )
         destination_api_key = destination_cluster_config["api_key"]
     else:
+        if "http" not in destination:
+            finish(
+                False, "ERROR: A valid destination cluster or URI must be specified!"
+            )
         destination_api_uri = destination
         destination_api_key = destination_api_key
 
@@ -2306,6 +2314,10 @@ def cli_vm_mirror_promote(
         )
         destination_api_key = destination_cluster_config["api_key"]
     else:
+        if "http" not in destination:
+            finish(
+                False, "ERROR: A valid destination cluster or URI must be specified!"
+            )
         destination_api_uri = destination
         destination_api_key = destination_api_key
 
