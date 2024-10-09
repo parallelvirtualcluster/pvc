@@ -3711,7 +3711,8 @@ def vm_worker_create_mirror(
     destination_storage_pool,
 ):
     now = datetime.now()
-    snapshot_name = now.strftime("%Y%m%d%H%M%S")
+    datestring = now.strftime("%Y%m%d%H%M%S")
+    snapshot_name = f"mr{datestring}"
 
     current_stage = 0
     total_stages = 1
@@ -4310,7 +4311,8 @@ def vm_worker_promote_mirror(
     remove_on_source=False,
 ):
     now = datetime.now()
-    snapshot_name = now.strftime("%Y%m%d%H%M%S")
+    datestring = now.strftime("%Y%m%d%H%M%S")
+    snapshot_name = f"mr{datestring}"
 
     current_stage = 0
     total_stages = 1
