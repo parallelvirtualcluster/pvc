@@ -4924,7 +4924,6 @@ def vm_worker_promote_mirror(
             f"{destination_api_uri}/vm/{vm_name}/state",
             headers={"Content-Type": "application/octet-stream"},
             params={"state": "start", "wait": True},
-            data=full_chunker(),
         )
         response.raise_for_status()
     except Exception:
