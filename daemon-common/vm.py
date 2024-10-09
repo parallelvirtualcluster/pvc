@@ -4285,10 +4285,15 @@ def vm_worker_create_mirror(
     block_t_end = time.time()
     block_mbps = round(block_total_mb / (block_t_end - block_t_start), 1)
 
+    if incremental_parent is not None:
+        verb = "updated"
+    else:
+        verb = "created"
+
     current_stage += 1
     return finish(
         celery,
-        f"Successfully created mirror of VM '{domain}' (snapshot '{snapshot_name}') on remote cluster '{destination_api_uri}' (average {block_mbps} MB/s)",
+        f"Successfully {verb} mirror of VM '{domain}' (snapshot '{snapshot_name}') on remote cluster '{destination_api_uri}' (average {block_mbps} MB/s)",
         current=current_stage,
         total=total_stages,
     )
