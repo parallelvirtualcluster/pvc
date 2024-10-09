@@ -696,11 +696,18 @@ def remove_vm(zkhandler, domain):
     return True, 'Removed VM "{}" and its disks from the cluster.'.format(domain)
 
 
-def start_vm(zkhandler, domain):
+def start_vm(zkhandler, domain, force=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    current_vm_state = zkhandler.read(("domain.state", dom_uuid))
+    if current_vm_state in ["mirror"] and not force:
+        return (
+            False,
+            'ERROR: VM "{}" is a snapshot mirror and start not forced!'.format(domain),
+        )
 
     # Set the VM to start
     change_state(zkhandler, dom_uuid, "start")
@@ -756,11 +763,17 @@ def shutdown_vm(zkhandler, domain, wait=False):
     return True, retmsg
 
 
-def stop_vm(zkhandler, domain):
+def stop_vm(zkhandler, domain, force=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    current_vm_state = zkhandler.read(("domain.state", dom_uuid))
+    if current_vm_state in ["mirror"] and not force:
+        return False, 'ERROR: VM "{}" is a snapshot mirror and stop not forced!'.format(
+            domain
+        )
 
     # Set the VM to stop
     change_state(zkhandler, dom_uuid, "stop")
@@ -775,8 +788,15 @@ def disable_vm(zkhandler, domain, force=False):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and perform a shutdown/stop if VM is online
-    current_state = zkhandler.read(("domain.state", dom_uuid))
-    if current_state in ["start"]:
+    current_vm_state = zkhandler.read(("domain.state", dom_uuid))
+    if current_vm_state in ["mirror"] and not force:
+        return (
+            False,
+            'ERROR: VM "{}" is a snapshot mirror and disable not forced!'.format(
+                domain
+            ),
+        )
+    elif current_vm_state in ["start"]:
         if force:
             change_state(zkhandler, dom_uuid, "stop")
             # Wait for the command to be registered by the node

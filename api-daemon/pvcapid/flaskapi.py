@@ -2645,7 +2645,7 @@ class API_VM_State(Resource):
           - in: query
             name: force
             type: boolean
-            description: Whether to force stop instead of shutdown VM during disable
+            description: For "disable", force stop instead of shutdown and/or force mirror state; for "start" or "stop", force mirror state.
           - in: query
             name: wait
             type: boolean
@@ -2667,15 +2667,15 @@ class API_VM_State(Resource):
         wait = bool(strtobool(reqargs.get("wait", "false")))
 
         if state == "start":
-            return api_helper.vm_start(vm)
+            return api_helper.vm_start(vm, force=force)
         if state == "shutdown":
             return api_helper.vm_shutdown(vm, wait)
         if state == "stop":
-            return api_helper.vm_stop(vm)
+            return api_helper.vm_stop(vm, force=force)
         if state == "restart":
             return api_helper.vm_restart(vm, wait)
         if state == "disable":
-            return api_helper.vm_disable(vm, force)
+            return api_helper.vm_disable(vm, force=force)
         abort(400)
 
 

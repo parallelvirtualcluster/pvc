@@ -1153,11 +1153,11 @@ def vm_remove(zkhandler, name):
 
 
 @ZKConnection(config)
-def vm_start(zkhandler, name):
+def vm_start(zkhandler, name, force=False):
     """
     Start a VM in the PVC cluster.
     """
-    retflag, retdata = pvc_vm.start_vm(zkhandler, name)
+    retflag, retdata = pvc_vm.start_vm(zkhandler, name, force=force)
 
     if retflag:
         retcode = 200
@@ -1201,11 +1201,11 @@ def vm_shutdown(zkhandler, name, wait):
 
 
 @ZKConnection(config)
-def vm_stop(zkhandler, name):
+def vm_stop(zkhandler, name, force=False):
     """
     Forcibly stop a VM in the PVC cluster.
     """
-    retflag, retdata = pvc_vm.stop_vm(zkhandler, name)
+    retflag, retdata = pvc_vm.stop_vm(zkhandler, name, force=force)
 
     if retflag:
         retcode = 200
@@ -1219,7 +1219,7 @@ def vm_stop(zkhandler, name):
 @ZKConnection(config)
 def vm_disable(zkhandler, name, force=False):
     """
-    Disable (shutdown or force stop if required)a  VM in the PVC cluster.
+    Disable (shutdown or force stop if required) a VM in the PVC cluster.
     """
     retflag, retdata = pvc_vm.disable_vm(zkhandler, name, force=force)
 

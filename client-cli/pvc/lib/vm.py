@@ -383,8 +383,8 @@ def vm_state(config, vm, target_state, force=False, wait=False):
     """
     params = {
         "state": target_state,
-        "force": str(force).lower(),
-        "wait": str(wait).lower(),
+        "force": force,
+        "wait": wait,
     }
     response = call_api(config, "post", "/vm/{vm}/state".format(vm=vm), params=params)
 

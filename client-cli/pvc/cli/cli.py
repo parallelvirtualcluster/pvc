@@ -1517,12 +1517,21 @@ def cli_vm_remove(domain):
 @click.command(name="start", short_help="Start up a defined virtual machine.")
 @connection_req
 @click.argument("domain")
-def cli_vm_start(domain):
+@click.option(
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Force a snapshot mirror state change.",
+)
+def cli_vm_start(domain, force_flag):
     """
     Start virtual machine DOMAIN on its configured node. DOMAIN may be a UUID or name.
+
+    If the VM is a snapshot mirror, "--force" allows a manual state change to the mirror.
     """
 
-    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "start")
+    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "start", force=force_flag)
     finish(retcode, retmsg)
 
 
@@ -1582,13 +1591,22 @@ def cli_vm_shutdown(domain, wait):
 @click.command(name="stop", short_help="Forcibly halt a running virtual machine.")
 @connection_req
 @click.argument("domain")
+@click.option(
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Force a snapshot mirror state change.",
+)
 @confirm_opt("Forcibly stop virtual machine {domain}")
-def cli_vm_stop(domain):
+def cli_vm_stop(domain, force_flag):
     """
     Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
+
+    If the VM is a snapshot mirror, "--force" allows a manual state change to the mirror.
     """
 
-    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "stop")
+    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "stop", force=force_flag)
     finish(retcode, retmsg)
 
 
@@ -1603,14 +1621,14 @@ def cli_vm_stop(domain):
     "force_flag",
     is_flag=True,
     default=False,
-    help="Forcibly stop the VM instead of waiting for shutdown.",
+    help="Forcibly stop VM without shutdown and/or force a snapshot mirror state change.",
 )
 @confirm_opt("Shut down and disable virtual machine {domain}")
 def cli_vm_disable(domain, force_flag):
     """
     Shut down virtual machine DOMAIN and mark it as disabled. DOMAIN may be a UUID or name.
 
-    Disabled VMs will not be counted towards a degraded cluster health status, unlike stopped VMs. Use this option for a VM that will remain off for an extended period.
+    If "--force" is specified, and the VM is running, it will be forcibly stopped instead of waiting for a graceful ACPI shutdown. If the VM is a snapshot mirror, "--force" allows a manual state change to the mirror.
     """
 
     retcode, retmsg = pvc.lib.vm.vm_state(
