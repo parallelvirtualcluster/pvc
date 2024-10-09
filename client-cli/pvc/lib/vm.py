@@ -607,11 +607,11 @@ def vm_send_snapshot(
     wait_flag=True,
 ):
     """
-    Send an (existing) snapshot of a VM's disks andconfiguration to a destination PVC cluster, optionally
+    Send an (existing) snapshot of a VM's disks and configuration to a destination PVC cluster, optionally
     incremental with incremental_parent
 
     API endpoint: POST /vm/{vm}/snapshot/send
-    API arguments: snapshot_name=snapshot_name, destination_api_uri=destination_api_uri, destination_api_key=destination_api_key, incremental_parent=incremental_parent
+    API arguments: snapshot_name=snapshot_name, destination_api_uri=destination_api_uri, destination_api_key=destination_api_key, destination_api_verify_ssl=destination_api_verify_ssl, incremental_parent=incremental_parent, destination_storage_pool=destination_storage_pool
     API schema: {"message":"{data}"}
     """
     params = {
@@ -627,6 +627,70 @@ def vm_send_snapshot(
 
     response = call_api(
         config, "post", "/vm/{vm}/snapshot/send".format(vm=vm), params=params
+    )
+
+    return get_wait_retdata(response, wait_flag)
+
+
+def vm_create_mirror(
+    config,
+    vm,
+    destination_api_uri,
+    destination_api_key,
+    destination_api_verify_ssl=True,
+    destination_storage_pool=None,
+    wait_flag=True,
+):
+    """
+    Create a new snapshot and send the snapshot to a destination PVC cluster, with automatic incremental handling
+
+    API endpoint: POST /vm/{vm}/mirror/create
+    API arguments: destination_api_uri=destination_api_uri, destination_api_key=destination_api_key, destination_api_verify_ssl=destination_api_verify_ssl, destination_storage_pool=destination_storage_pool
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "destination_api_uri": destination_api_uri,
+        "destination_api_key": destination_api_key,
+        "destination_api_verify_ssl": destination_api_verify_ssl,
+    }
+    if destination_storage_pool is not None:
+        params["destination_storage_pool"] = destination_storage_pool
+
+    response = call_api(
+        config, "post", "/vm/{vm}/mirror/create".format(vm=vm), params=params
+    )
+
+    return get_wait_retdata(response, wait_flag)
+
+
+def vm_promote_mirror(
+    config,
+    vm,
+    destination_api_uri,
+    destination_api_key,
+    destination_api_verify_ssl=True,
+    destination_storage_pool=None,
+    remove_on_source=False,
+    wait_flag=True,
+):
+    """
+    Shut down a VM, create a new snapshot, send the snapshot to a destination PVC cluster, start the VM on the remote cluster, and optionally remove the local VM, with automatic incremental handling
+
+    API endpoint: POST /vm/{vm}/mirror/promote
+    API arguments: destination_api_uri=destination_api_uri, destination_api_key=destination_api_key, destination_api_verify_ssl=destination_api_verify_ssl, destination_storage_pool=destination_storage_pool, remove_on_source=remove_on_source
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "destination_api_uri": destination_api_uri,
+        "destination_api_key": destination_api_key,
+        "destination_api_verify_ssl": destination_api_verify_ssl,
+        "remove_on_source": remove_on_source,
+    }
+    if destination_storage_pool is not None:
+        params["destination_storage_pool"] = destination_storage_pool
+
+    response = call_api(
+        config, "post", "/vm/{vm}/mirror/promote".format(vm=vm), params=params
     )
 
     return get_wait_retdata(response, wait_flag)

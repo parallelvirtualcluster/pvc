@@ -2078,7 +2078,7 @@ def cli_vm_snapshot_send(
 
     Incremental sends are possible by specifying the "-i"/"--incremental-parent" option along with a parent snapshot name. To correctly receive, that parent snapshot must exist on DESTINATION. Subsequent sends after the first do not have to be incremental, but an incremental send is likely to perform better than a full send if the VM experiences few writes.
 
-    WARNING: Once sent, the VM will be in the state "mirror" on the remote cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the remote side and sent back or data will be inconsistent between the instances. Only VMs in the "mirror" state can accept new sends.
+    WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances. Only VMs in the "mirror" state can accept new sends.
 
     WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
     """
@@ -2106,6 +2106,199 @@ def cli_vm_snapshot_send(
         destination_api_verify_ssl=CLI_CONFIG.get("verify_ssl"),
         destination_storage_pool=destination_storage_pool,
         incremental_parent=incremental_parent,
+        wait_flag=wait_flag,
+    )
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# > pvc vm mirror
+###############################################################################
+@click.group(
+    name="mirror",
+    short_help="Manage snapshot mirrors for PVC VMs.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_vm_mirror():
+    """
+    Manage snapshot mirrors of VMs in a PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# > pvc vm mirror create
+###############################################################################
+@click.command(
+    name="create",
+    short_help="Create a snapshot mirror of a virtual machine to another PVC cluster.",
+)
+@connection_req
+@click.argument("domain")
+@click.argument("destination")
+@click.option(
+    "-k",
+    "--destination-api-key",
+    "destination_api_key",
+    default=None,
+    help="The API key of the destination cluster when specifying an API URI.",
+)
+@click.option(
+    "-p",
+    "--destination-pool",
+    "destination_storage_pool",
+    default=None,
+    help="The target storage pool on the destination cluster, if it differs from the source pool.",
+)
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress if waiting",
+)
+def cli_vm_mirror_create(
+    domain,
+    destination,
+    destination_api_key,
+    destination_storage_pool,
+    wait_flag,
+):
+    """
+    For the virtual machine DOMAIN: create a new snapshot (dated), and send snapshot to the remote PVC cluster DESTINATION; creates a cross-cluster snapshot mirror of the VM.
+
+    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
+
+    The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
+
+    This command may be used repeatedly to send new updates for a remote VM mirror. If a valid shared snapshot is found on the destination cluster, block device transfers will be incremental based on that snapshot.
+
+    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify one with the "-p"/"--detination-pool" option.
+
+    WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances. Only VMs in the "mirror" state can accept new sends. Consider using "mirror promote" instead of any manual promotion attempts.
+
+    WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
+    """
+
+    connections_config = get_store(CLI_CONFIG["store_path"])
+    if destination in connections_config.keys():
+        destination_cluster_config = connections_config[destination]
+        destination_api_uri = "{}://{}:{}{}".format(
+            destination_cluster_config["scheme"],
+            destination_cluster_config["host"],
+            destination_cluster_config["port"],
+            CLI_CONFIG["api_prefix"],
+        )
+        destination_api_key = destination_cluster_config["api_key"]
+    else:
+        destination_api_uri = destination
+        destination_api_key = destination_api_key
+
+    retcode, retmsg = pvc.lib.vm.vm_create_mirror(
+        CLI_CONFIG,
+        domain,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=CLI_CONFIG.get("verify_ssl"),
+        destination_storage_pool=destination_storage_pool,
+        wait_flag=wait_flag,
+    )
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# > pvc vm mirror promote
+###############################################################################
+@click.command(
+    name="promote",
+    short_help="Shut down, create a snapshot mirror, and promote a virtual machine to another PVC cluster.",
+)
+@connection_req
+@click.argument("domain")
+@click.argument("destination")
+@click.option(
+    "-k",
+    "--destination-api-key",
+    "destination_api_key",
+    default=None,
+    help="The API key of the destination cluster when specifying an API URI.",
+)
+@click.option(
+    "-p",
+    "--destination-pool",
+    "destination_storage_pool",
+    default=None,
+    help="The target storage pool on the destination cluster, if it differs from the source pool.",
+)
+@click.option(
+    "--remove/--no-remove",
+    "remove_flag",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Remove or don't remove the local VM after promoting (if set, performs a cross-cluster move).",
+)
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress if waiting",
+)
+def cli_vm_mirror_promote(
+    domain,
+    destination,
+    destination_api_key,
+    destination_storage_pool,
+    remove_flag,
+    wait_flag,
+):
+    """
+    For the virtual machine DOMAIN: shut down on this cluster, create a new snapshot (dated), send snapshot to the remote PVC cluster DESTINATION, start on DESTINATION, and optionally remove from this cluster; performs a cross-cluster move of the VM, with or without retaining the source as a snapshot mirror.
+
+    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
+
+    The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
+
+    If a valid shared snapshot is found on the destination cluster, block device transfers will be incremental based on that snapshot.
+
+    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify one with the "-p"/"--detination-pool" option.
+
+    WARNING: Once promoted, if the "--remove" flag is not set, the VM will be in the state "mirror" on this cluster. This effectively flips which cluster is the "primary" for this VM, and subsequent mirror management commands must be run against the destination cluster instead of this cluster. If the "--remove" flag is set, the VM will be removed from this cluster entirely once successfully started on the destination cluster.
+
+    WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
+    """
+
+    connections_config = get_store(CLI_CONFIG["store_path"])
+    if destination in connections_config.keys():
+        destination_cluster_config = connections_config[destination]
+        destination_api_uri = "{}://{}:{}{}".format(
+            destination_cluster_config["scheme"],
+            destination_cluster_config["host"],
+            destination_cluster_config["port"],
+            CLI_CONFIG["api_prefix"],
+        )
+        destination_api_key = destination_cluster_config["api_key"]
+    else:
+        destination_api_uri = destination
+        destination_api_key = destination_api_key
+
+    retcode, retmsg = pvc.lib.vm.vm_promote_mirror(
+        CLI_CONFIG,
+        domain,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=CLI_CONFIG.get("verify_ssl"),
+        destination_storage_pool=destination_storage_pool,
+        remove_on_source=remove_flag,
         wait_flag=wait_flag,
     )
 
@@ -6686,6 +6879,9 @@ cli_vm_snapshot.add_command(cli_vm_snapshot_export)
 cli_vm_snapshot.add_command(cli_vm_snapshot_import)
 cli_vm_snapshot.add_command(cli_vm_snapshot_send)
 cli_vm.add_command(cli_vm_snapshot)
+cli_vm_mirror.add_command(cli_vm_mirror_create)
+cli_vm_mirror.add_command(cli_vm_mirror_promote)
+cli_vm.add_command(cli_vm_mirror)
 cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)
 cli_vm_backup.add_command(cli_vm_backup_remove)

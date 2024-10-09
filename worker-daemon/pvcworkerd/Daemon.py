@@ -34,6 +34,8 @@ from daemon_lib.vm import (
     vm_worker_export_snapshot,
     vm_worker_import_snapshot,
     vm_worker_send_snapshot,
+    vm_worker_create_mirror,
+    vm_worker_promote_mirror,
 )
 from daemon_lib.ceph import (
     osd_worker_add_osd,
@@ -273,6 +275,90 @@ def vm_send_snapshot(
         destination_api_verify_ssl=destination_api_verify_ssl,
         incremental_parent=incremental_parent,
         destination_storage_pool=destination_storage_pool,
+    )
+
+
+@celery.task(name="vm.create_mirror", bind=True, routing_key="run_on")
+def vm_create_mirror(
+    self,
+    domain=None,
+    destination_api_uri="",
+    destination_api_key="",
+    destination_api_verify_ssl=True,
+    destination_storage_pool=None,
+    run_on="primary",
+):
+    @ZKConnection(config)
+    def run_vm_create_mirror(
+        zkhandler,
+        self,
+        domain,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=True,
+        destination_storage_pool=None,
+    ):
+        return vm_worker_create_mirror(
+            zkhandler,
+            self,
+            domain,
+            destination_api_uri,
+            destination_api_key,
+            destination_api_verify_ssl=destination_api_verify_ssl,
+            destination_storage_pool=destination_storage_pool,
+        )
+
+    return run_vm_create_mirror(
+        self,
+        domain,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=destination_api_verify_ssl,
+        destination_storage_pool=destination_storage_pool,
+    )
+
+
+@celery.task(name="vm.promote_mirror", bind=True, routing_key="run_on")
+def vm_promote_mirror(
+    self,
+    domain=None,
+    destination_api_uri="",
+    destination_api_key="",
+    destination_api_verify_ssl=True,
+    destination_storage_pool=None,
+    remove_on_source=False,
+    run_on="primary",
+):
+    @ZKConnection(config)
+    def run_vm_promote_mirror(
+        zkhandler,
+        self,
+        domain,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=True,
+        destination_storage_pool=None,
+        remove_on_source=False,
+    ):
+        return vm_worker_promote_mirror(
+            zkhandler,
+            self,
+            domain,
+            destination_api_uri,
+            destination_api_key,
+            destination_api_verify_ssl=destination_api_verify_ssl,
+            destination_storage_pool=destination_storage_pool,
+            remove_on_source=remove_on_source,
+        )
+
+    return run_vm_promote_mirror(
+        self,
+        domain,
+        destination_api_uri,
+        destination_api_key,
+        destination_api_verify_ssl=destination_api_verify_ssl,
+        destination_storage_pool=destination_storage_pool,
+        remove_on_source=remove_on_source,
     )
 
 

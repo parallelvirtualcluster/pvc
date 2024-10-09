@@ -4015,6 +4015,229 @@ class API_VM_Snapshot_Receive_Config(Resource):
 api.add_resource(API_VM_Snapshot_Receive_Config, "/vm/<vm>/snapshot/receive/config")
 
 
+# /vm/<vm>/mirror/create
+class API_VM_Mirror_Create(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "destination_api_uri",
+                "required": True,
+                "helptext": "A destination API URI must be specified",
+            },
+            {
+                "name": "destination_api_key",
+                "required": True,
+                "helptext": "A destination API key must be specified",
+            },
+            {
+                "name": "destination_api_verify_ssl",
+                "required": False,
+            },
+            {
+                "name": "destination_storage_pool",
+                "required": False,
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Create (or update) a snapshot mirror of a VM to a remote cluster
+
+        This method handles both the creation of a new VM snapshot, as well as sending that snapshot to a remote cluster, creating or updating a VM mirror. It will also automatically handle full vs. incremental block sends if possible based on the available snapshots on both sides.
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: destination_api_uri
+            type: string
+            required: true
+            description: The base API URI of the destination PVC cluster (with prefix if applicable)
+          - in: query
+            name: destination_api_key
+            type: string
+            required: true
+            description: The API authentication key of the destination PVC cluster
+          - in: query
+            name: destination_api_verify_ssl
+            type: boolean
+            required: false
+            default: true
+            description: Whether or not to validate SSL certificates for an SSL-enabled destination API
+          - in: query
+            name: destination_storage_pool
+            type: string
+            required: false
+            default: source storage pool name
+            description: The remote cluster storage pool to create RBD volumes in, if different from the source storage pool
+        responses:
+          202:
+            description: Accepted
+            schema:
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        destination_api_uri = reqargs.get("destination_api_uri", None)
+        destination_api_key = reqargs.get("destination_api_key", None)
+        destination_api_verify_ssl = bool(
+            strtobool(reqargs.get("destination_api_verify_ssl", "true"))
+        )
+        destination_storage_pool = reqargs.get("destination_storage_pool", None)
+
+        task = run_celery_task(
+            "vm.create_mirror",
+            domain=vm,
+            destination_api_uri=destination_api_uri,
+            destination_api_key=destination_api_key,
+            destination_api_verify_ssl=destination_api_verify_ssl,
+            destination_storage_pool=destination_storage_pool,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.send_snapshot",
+                "run_on": f"{get_primary_node()} (primary)",
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
+
+
+api.add_resource(API_VM_Mirror_Create, "/vm/<vm>/mirror/create")
+
+
+# /vm/<vm>/mirror/promote
+class API_VM_Mirror_Promote(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "destination_api_uri",
+                "required": True,
+                "helptext": "A destination API URI must be specified",
+            },
+            {
+                "name": "destination_api_key",
+                "required": True,
+                "helptext": "A destination API key must be specified",
+            },
+            {
+                "name": "destination_api_verify_ssl",
+                "required": False,
+            },
+            {
+                "name": "destination_storage_pool",
+                "required": False,
+            },
+            {
+                "name": "remove_on_source",
+                "required": False,
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Promote a snapshot mirror of a VM on a remote cluster, flipping "mirror" state, and optionally removing the source VM on this cluster.
+
+        This method handles shutting down the VM on this cluster, creating a new VM snapshot, sending that snapshot to a remote cluster, then starting up the VM on the remote cluster. It will also automatically handle full vs. incremental block sends if possible based on the available snapshots on both sides.
+
+        NOTE: This method may be used alone to perform a one-shot cross-cluster move; creating the mirror first is not required, though doing so will improve performance by allowing an incremental block send.
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: destination_api_uri
+            type: string
+            required: true
+            description: The base API URI of the destination PVC cluster (with prefix if applicable)
+          - in: query
+            name: destination_api_key
+            type: string
+            required: true
+            description: The API authentication key of the destination PVC cluster
+          - in: query
+            name: destination_api_verify_ssl
+            type: boolean
+            required: false
+            default: true
+            description: Whether or not to validate SSL certificates for an SSL-enabled destination API
+          - in: query
+            name: destination_storage_pool
+            type: string
+            required: false
+            default: source storage pool name
+            description: The remote cluster storage pool to create RBD volumes in, if different from the source storage pool
+          - in: query
+            name: remove_on_source
+            required: false
+            default: false
+            description: Remove the VM on the source cluster once promoted (performs a full move between clusters)
+        responses:
+          202:
+            description: Accepted
+            schema:
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        destination_api_uri = reqargs.get("destination_api_uri", None)
+        destination_api_key = reqargs.get("destination_api_key", None)
+        destination_api_verify_ssl = bool(
+            strtobool(reqargs.get("destination_api_verify_ssl", "true"))
+        )
+        destination_storage_pool = reqargs.get("destination_storage_pool", None)
+        remove_on_source = reqargs.get("remove_on_source", False)
+
+        task = run_celery_task(
+            "vm.promote_mirror",
+            domain=vm,
+            destination_api_uri=destination_api_uri,
+            destination_api_key=destination_api_key,
+            destination_api_verify_ssl=destination_api_verify_ssl,
+            destination_storage_pool=destination_storage_pool,
+            remove_on_source=remove_on_source,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.send_snapshot",
+                "run_on": f"{get_primary_node()} (primary)",
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
+
+
+api.add_resource(API_VM_Mirror_Promote, "/vm/<vm>/mirror/promote")
+
+
 # /vm/autobackup
 class API_VM_Autobackup_Root(Resource):
     @RequestParser(

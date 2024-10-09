@@ -24,6 +24,8 @@ import re
 import os.path
 import lxml.objectify
 import lxml.etree
+import rados
+import requests
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -33,6 +35,8 @@ from json import load as jload
 from json import loads as jloads
 from libvirt import open as lvopen
 from os import scandir
+from packaging.version import parse as parse_version
+from rbd import Image as RBDImage
 from shutil import rmtree
 from socket import gethostname
 from uuid import UUID
@@ -3132,10 +3136,6 @@ def vm_worker_send_snapshot(
     incremental_parent=None,
     destination_storage_pool=None,
 ):
-    import requests
-    import rados
-    import rbd
-    from packaging.version import parse as parse_version
 
     current_stage = 0
     total_stages = 1
@@ -3156,7 +3156,11 @@ def vm_worker_send_snapshot(
         return False
 
     # Get our side's VM configuration details
-    vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
+    try:
+        vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
+    except KeyError:
+        vm_detail = None
+
     if not isinstance(vm_detail, dict):
         fail(
             celery,
@@ -3264,13 +3268,13 @@ def vm_worker_send_snapshot(
         params=None,
         data=None,
     )
-    destination_vm_status = response.json()
-    if type(destination_vm_status) is list and len(destination_vm_status) > 0:
-        destination_vm_status = destination_vm_status[0]
+    destination_vm_detail = response.json()
+    if type(destination_vm_detail) is list and len(destination_vm_detail) > 0:
+        destination_vm_detail = destination_vm_detail[0]
     else:
-        destination_vm_status = {}
+        destination_vm_detail = {}
 
-    current_destination_vm_state = destination_vm_status.get("state", None)
+    current_destination_vm_state = destination_vm_detail.get("state", None)
     if (
         current_destination_vm_state is not None
         and current_destination_vm_state != "mirror"
@@ -3321,7 +3325,7 @@ def vm_worker_send_snapshot(
     snapshot_rbdsnaps = snapshot_rbdsnaps.split(",")
 
     # Get details about remote VM snapshots
-    destination_vm_snapshots = destination_vm_status.get("snapshots", [])
+    destination_vm_snapshots = destination_vm_detail.get("snapshots", [])
 
     # Check if this snapshot is in the remote list already
     if snapshot_name in [s["name"] for s in destination_vm_snapshots]:
@@ -3467,7 +3471,7 @@ def vm_worker_send_snapshot(
         cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
         cluster.connect()
         ioctx = cluster.open_ioctx(pool)
-        image = rbd.Image(ioctx, name=volume, snapshot=snapshot_name, read_only=True)
+        image = RBDImage(ioctx, name=volume, snapshot=snapshot_name, read_only=True)
         size = image.size()
         chunk_size_mb = 1024
 
@@ -3673,6 +3677,1254 @@ def vm_worker_send_snapshot(
     return finish(
         celery,
         f"Successfully sent snapshot '{snapshot_name}' of VM '{domain}' to remote cluster '{destination_api_uri}' (average {block_mbps} MB/s)",
+        current=current_stage,
+        total=total_stages,
+    )
+
+
+def vm_worker_create_mirror(
+    zkhandler,
+    celery,
+    domain,
+    destination_api_uri,
+    destination_api_key,
+    destination_api_verify_ssl,
+    destination_storage_pool,
+):
+    now = datetime.now()
+    snapshot_name = now.strftime("%Y%m%d%H%M%S")
+
+    current_stage = 0
+    total_stages = 1
+    start(
+        celery,
+        f"Creating mirror of VM '{domain}' to cluster '{destination_api_uri}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        fail(
+            celery,
+            f"Could not find VM '{domain}' in the cluster",
+        )
+        return False
+
+    current_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
+    if current_snapshots and snapshot_name in current_snapshots:
+        # This should never actually happen since snapshots with mirror are dated, but worth
+        # checking just in case someone tries to be sneaky
+        fail(
+            celery,
+            f"Snapshot name '{snapshot_name}' already exists for VM '{domain}'!",
+        )
+        return False
+
+    # Get our side's VM configuration details
+    try:
+        vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
+    except KeyError:
+        vm_detail = None
+
+    if not isinstance(vm_detail, dict):
+        fail(
+            celery,
+            f"VM listing returned invalid data: {vm_detail}",
+        )
+        return False
+
+    vm_name = vm_detail["name"]
+
+    # Validate that the destination cluster can be reached
+    destination_api_timeout = (3.05, 172800)
+    destination_api_headers = {
+        "X-Api-Key": destination_api_key,
+    }
+
+    session = requests.Session()
+    session.headers.update(destination_api_headers)
+    session.verify = destination_api_verify_ssl
+    session.timeout = destination_api_timeout
+
+    try:
+        # Hit the API root; this should return "PVC API version x"
+        response = session.get(
+            f"{destination_api_uri}/",
+            timeout=destination_api_timeout,
+            params=None,
+            data=None,
+        )
+        if "PVC API" not in response.json().get("message"):
+            raise ValueError("Remote API is not a PVC API or incorrect URI given")
+    except requests.exceptions.ConnectionError as e:
+        fail(
+            celery,
+            f"Connection to remote API timed out: {e}",
+        )
+        return False
+    except ValueError as e:
+        fail(
+            celery,
+            f"Connection to remote API is not valid: {e}",
+        )
+        return False
+    except Exception as e:
+        fail(
+            celery,
+            f"Connection to remote API failed: {e}",
+        )
+        return False
+
+    # Hit the API "/status" endpoint to validate API key and cluster status
+    response = session.get(
+        f"{destination_api_uri}/status",
+        params=None,
+        data=None,
+    )
+    destination_cluster_status = response.json()
+    current_destination_pvc_version = destination_cluster_status.get(
+        "pvc_version", None
+    )
+    if current_destination_pvc_version is None:
+        fail(
+            celery,
+            "Connection to remote API failed: no PVC version information returned",
+        )
+        return False
+
+    expected_destination_pvc_version = "0.9.100"  # TODO: 0.9.101 when completed
+    # Work around development versions
+    current_destination_pvc_version = re.sub(
+        r"~git-.*", "", current_destination_pvc_version
+    )
+    # Compare versions
+    if parse_version(current_destination_pvc_version) < parse_version(
+        expected_destination_pvc_version
+    ):
+        fail(
+            celery,
+            f"Remote PVC cluster is too old: requires version {expected_destination_pvc_version} or higher",
+        )
+        return False
+
+    # Check if the VM already exists on the remote
+    response = session.get(
+        f"{destination_api_uri}/vm/{domain}",
+        params=None,
+        data=None,
+    )
+    destination_vm_detail = response.json()
+    if type(destination_vm_detail) is list and len(destination_vm_detail) > 0:
+        destination_vm_detail = destination_vm_detail[0]
+    else:
+        destination_vm_detail = {}
+
+    current_destination_vm_state = destination_vm_detail.get("state", None)
+    if (
+        current_destination_vm_state is not None
+        and current_destination_vm_state != "mirror"
+    ):
+        fail(
+            celery,
+            "Remote PVC VM exists and is not a mirror",
+        )
+        return False
+
+    # Get the list of all RBD volumes
+    rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
+
+    # Snapshot creation stages
+    total_stages += 1 + len(rbd_list)
+    # Snapshot sending stages
+    total_stages = 2 + (3 * len(rbd_list))
+
+    #
+    # 1. Create snapshot
+    #
+
+    snap_list = list()
+
+    # If a snapshot fails, clean up any snapshots that were successfuly created
+    def cleanup_failure():
+        for snapshot in snap_list:
+            rbd, snapshot_name = snapshot.split("@")
+            pool, volume = rbd.split("/")
+            # We capture no output here, because if this fails too we're in a deep
+            # error chain and will just ignore it
+            ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
+
+    # Iterrate through and create a snapshot for each RBD volume
+    for rbd in rbd_list:
+        current_stage += 1
+        update(
+            celery,
+            f"Creating RBD snapshot of {rbd}",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        pool, volume = rbd.split("/")
+        ret, msg = ceph.add_snapshot(
+            zkhandler, pool, volume, snapshot_name, zk_only=False
+        )
+        if not ret:
+            cleanup_failure()
+            fail(
+                celery,
+                msg.replace("ERROR: ", ""),
+            )
+            return False
+        else:
+            snap_list.append(f"{pool}/{volume}@{snapshot_name}")
+
+    current_stage += 1
+    update(
+        celery,
+        "Creating VM configuration snapshot",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Get the current timestamp
+    tstart = time.time()
+    # Get the current domain XML
+    vm_config = zkhandler.read(("domain.xml", dom_uuid))
+
+    # Add the snapshot entry to Zookeeper
+    zkhandler.write(
+        [
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.name",
+                    snapshot_name,
+                ),
+                snapshot_name,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.timestamp",
+                    snapshot_name,
+                ),
+                tstart,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.xml",
+                    snapshot_name,
+                ),
+                vm_config,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.rbd_snapshots",
+                    snapshot_name,
+                ),
+                ",".join(snap_list),
+            ),
+        ]
+    )
+
+    #
+    # 2. Send snapshot to remote
+    #
+
+    # Determine if there's a valid shared snapshot to send an incremental diff from
+    local_snapshots = {s["name"] for s in vm_detail["snapshots"]}
+    remote_snapshots = {s["name"] for s in destination_vm_detail["snapshots"]}
+    incremental_parent = next(
+        (s for s in local_snapshots if s in remote_snapshots), None
+    )
+
+    current_stage += 1
+    update(
+        celery,
+        f"Sending VM configuration for {vm_name}@{snapshot_name}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    send_params = {
+        "snapshot": snapshot_name,
+        "source_snapshot": incremental_parent,
+    }
+    try:
+        response = session.post(
+            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
+            headers={"Content-Type": "application/json"},
+            params=send_params,
+            json=vm_detail,
+        )
+        response.raise_for_status()
+    except Exception as e:
+        fail(
+            celery,
+            f"Failed to send config: {e}",
+        )
+        return False
+
+    # Create the block devices on the remote side if this is a new VM send
+    block_t_start = time.time()
+    block_total_mb = 0
+
+    for rbd_detail in [r for r in vm_detail["disks"] if r["type"] == "rbd"]:
+        rbd_name = rbd_detail["name"]
+        pool, volume = rbd_name.split("/")
+
+        current_stage += 1
+        update(
+            celery,
+            f"Preparing remote volume for {rbd_name}@{snapshot_name}",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        # Get the storage volume details
+        retcode, retdata = ceph.get_list_volume(zkhandler, pool, volume, is_fuzzy=False)
+        if not retcode or len(retdata) != 1:
+            if len(retdata) < 1:
+                error_message = f"No detail returned for volume {rbd_name}"
+            elif len(retdata) > 1:
+                error_message = f"Multiple details returned for volume {rbd_name}"
+            else:
+                error_message = f"Error getting details for volume {rbd_name}"
+            fail(
+                celery,
+                error_message,
+            )
+            return False
+
+        try:
+            local_volume_size = ceph.format_bytes_fromhuman(retdata[0]["stats"]["size"])
+        except Exception as e:
+            error_message = f"Failed to get volume size for {rbd_name}: {e}"
+
+        if destination_storage_pool is not None:
+            pool = destination_storage_pool
+
+        current_stage += 1
+        update(
+            celery,
+            f"Checking remote volume {rbd_name} for compliance",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        # Check if the volume exists on the target
+        response = session.get(
+            f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
+            params=None,
+            data=None,
+        )
+        if response.status_code != 404 and current_destination_vm_state is None:
+            fail(
+                celery,
+                f"Remote storage pool {pool} already contains volume {volume}",
+            )
+            return False
+
+        if current_destination_vm_state is not None:
+            try:
+                remote_volume_size = ceph.format_bytes_fromhuman(
+                    response.json()[0]["stats"]["size"]
+                )
+            except Exception as e:
+                error_message = f"Failed to get volume size for remote {rbd_name}: {e}"
+                fail(celery, error_message)
+                return False
+
+            if local_volume_size != remote_volume_size:
+                response = session.put(
+                    f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
+                    params={"new_size": local_volume_size, "force": True},
+                )
+                if response.status_code != 200:
+                    fail(
+                        celery,
+                        "Failed to resize remote volume to match local volume",
+                    )
+                    return False
+
+        # Send the volume to the remote
+        cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
+        cluster.connect()
+        ioctx = cluster.open_ioctx(pool)
+        image = RBDImage(ioctx, name=volume, snapshot=snapshot_name, read_only=True)
+        size = image.size()
+        chunk_size_mb = 1024
+
+        if incremental_parent is not None:
+            # Diff between incremental_parent and snapshot
+            celery_message = (
+                f"Sending diff of {rbd_name}@{incremental_parent} → {snapshot_name}"
+            )
+        else:
+            # Full image transfer
+            celery_message = f"Sending full image of {rbd_name}@{snapshot_name}"
+
+        current_stage += 1
+        update(
+            celery,
+            celery_message,
+            current=current_stage,
+            total=total_stages,
+        )
+
+        if incremental_parent is not None:
+            # Createa single session to reuse connections
+            send_params = {
+                "pool": pool,
+                "volume": volume,
+                "snapshot": snapshot_name,
+                "source_snapshot": incremental_parent,
+            }
+
+            session.params.update(send_params)
+
+            # Send 32 objects (128MB) at once
+            send_max_objects = 32
+            batch_size_mb = 4 * send_max_objects
+            batch_size = batch_size_mb * 1024 * 1024
+
+            total_chunks = 0
+
+            def diff_cb_count(offset, length, exists):
+                nonlocal total_chunks
+                if exists:
+                    total_chunks += 1
+
+            current_chunk = 0
+            buffer = list()
+            buffer_size = 0
+            last_chunk_time = time.time()
+
+            def send_batch_multipart(buffer):
+                nonlocal last_chunk_time
+                files = {}
+                for i in range(len(buffer)):
+                    files[f"object_{i}"] = (
+                        f"object_{i}",
+                        buffer[i],
+                        "application/octet-stream",
+                    )
+                try:
+                    response = session.put(
+                        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                        files=files,
+                        stream=True,
+                    )
+                    response.raise_for_status()
+                except Exception as e:
+                    fail(
+                        celery,
+                        f"Failed to send diff batch ({e}): {response.json()['message']}",
+                    )
+                    return False
+
+                current_chunk_time = time.time()
+                chunk_time = current_chunk_time - last_chunk_time
+                last_chunk_time = current_chunk_time
+                chunk_speed = round(batch_size_mb / chunk_time, 1)
+                update(
+                    celery,
+                    celery_message + f" ({chunk_speed} MB/s)",
+                    current=current_stage,
+                    total=total_stages,
+                )
+
+            def add_block_to_multipart(buffer, offset, length, data):
+                part_data = (
+                    offset.to_bytes(8, "big") + length.to_bytes(8, "big") + data
+                )  # Add header and data
+                buffer.append(part_data)
+
+            def diff_cb_send(offset, length, exists):
+                nonlocal current_chunk, buffer, buffer_size
+                if exists:
+                    # Read the data for the current block
+                    data = image.read(offset, length)
+                    # Add the block to the multipart buffer
+                    add_block_to_multipart(buffer, offset, length, data)
+                    current_chunk += 1
+                    buffer_size += len(data)
+                    if buffer_size >= batch_size:
+                        send_batch_multipart(buffer)
+                        buffer.clear()  # Clear the buffer after sending
+                        buffer_size = 0  # Reset buffer size
+
+            try:
+                image.set_snap(snapshot_name)
+                image.diff_iterate(
+                    0, size, incremental_parent, diff_cb_count, whole_object=True
+                )
+                block_total_mb += total_chunks * 4
+                image.diff_iterate(
+                    0, size, incremental_parent, diff_cb_send, whole_object=True
+                )
+
+                if buffer:
+                    send_batch_multipart(buffer)
+                    buffer.clear()  # Clear the buffer after sending
+                    buffer_size = 0  # Reset buffer size
+            except Exception:
+                fail(
+                    celery,
+                    f"Failed to send snapshot: {response.json()['message']}",
+                )
+                return False
+            finally:
+                image.close()
+                ioctx.close()
+                cluster.shutdown()
+        else:
+
+            def full_chunker():
+                nonlocal block_total_mb
+                chunk_size = 1024 * 1024 * chunk_size_mb
+                current_chunk = 0
+                last_chunk_time = time.time()
+                while current_chunk < size:
+                    chunk = image.read(current_chunk, chunk_size)
+                    yield chunk
+                    current_chunk += chunk_size
+                    block_total_mb += len(chunk) / 1024 / 1024
+                    current_chunk_time = time.time()
+                    chunk_time = current_chunk_time - last_chunk_time
+                    last_chunk_time = current_chunk_time
+                    chunk_speed = round(chunk_size_mb / chunk_time, 1)
+                    update(
+                        celery,
+                        celery_message + f" ({chunk_speed} MB/s)",
+                        current=current_stage,
+                        total=total_stages,
+                    )
+
+            send_params = {
+                "pool": pool,
+                "volume": volume,
+                "snapshot": snapshot_name,
+                "size": size,
+                "source_snapshot": incremental_parent,
+            }
+
+            try:
+                response = session.post(
+                    f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                    headers={"Content-Type": "application/octet-stream"},
+                    params=send_params,
+                    data=full_chunker(),
+                )
+                response.raise_for_status()
+            except Exception:
+                fail(
+                    celery,
+                    f"Failed to send snapshot: {response.json()['message']}",
+                )
+                return False
+            finally:
+                image.close()
+                ioctx.close()
+                cluster.shutdown()
+
+        send_params = {
+            "pool": pool,
+            "volume": volume,
+            "snapshot": snapshot_name,
+        }
+        try:
+            response = session.patch(
+                f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                params=send_params,
+            )
+            response.raise_for_status()
+        except Exception:
+            fail(
+                celery,
+                f"Failed to send snapshot: {response.json()['message']}",
+            )
+            return False
+        finally:
+            image.close()
+            ioctx.close()
+            cluster.shutdown()
+
+    block_t_end = time.time()
+    block_mbps = round(block_total_mb / (block_t_end - block_t_start), 1)
+
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully created mirror of VM '{domain}' (snapshot '{snapshot_name}') on remote cluster '{destination_api_uri}' (average {block_mbps} MB/s)",
+        current=current_stage,
+        total=total_stages,
+    )
+
+
+def vm_worker_promote_mirror(
+    zkhandler,
+    celery,
+    domain,
+    destination_api_uri,
+    destination_api_key,
+    destination_api_verify_ssl,
+    destination_storage_pool,
+    remove_on_source=False,
+):
+    now = datetime.now()
+    snapshot_name = now.strftime("%Y%m%d%H%M%S")
+
+    current_stage = 0
+    total_stages = 1
+    start(
+        celery,
+        f"Creating mirror of VM '{domain}' to cluster '{destination_api_uri}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        fail(
+            celery,
+            f"Could not find VM '{domain}' in the cluster",
+        )
+        return False
+
+    current_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
+    if current_snapshots and snapshot_name in current_snapshots:
+        # This should never actually happen since snapshots with mirror are dated, but worth
+        # checking just in case someone tries to be sneaky
+        fail(
+            celery,
+            f"Snapshot name '{snapshot_name}' already exists for VM '{domain}'!",
+        )
+        return False
+
+    # Get our side's VM configuration details
+    try:
+        vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
+    except KeyError:
+        vm_detail = None
+
+    if not isinstance(vm_detail, dict):
+        fail(
+            celery,
+            f"VM listing returned invalid data: {vm_detail}",
+        )
+        return False
+
+    vm_name = vm_detail["name"]
+
+    # Validate that the destination cluster can be reached
+    destination_api_timeout = (3.05, 172800)
+    destination_api_headers = {
+        "X-Api-Key": destination_api_key,
+    }
+
+    session = requests.Session()
+    session.headers.update(destination_api_headers)
+    session.verify = destination_api_verify_ssl
+    session.timeout = destination_api_timeout
+
+    try:
+        # Hit the API root; this should return "PVC API version x"
+        response = session.get(
+            f"{destination_api_uri}/",
+            timeout=destination_api_timeout,
+            params=None,
+            data=None,
+        )
+        if "PVC API" not in response.json().get("message"):
+            raise ValueError("Remote API is not a PVC API or incorrect URI given")
+    except requests.exceptions.ConnectionError as e:
+        fail(
+            celery,
+            f"Connection to remote API timed out: {e}",
+        )
+        return False
+    except ValueError as e:
+        fail(
+            celery,
+            f"Connection to remote API is not valid: {e}",
+        )
+        return False
+    except Exception as e:
+        fail(
+            celery,
+            f"Connection to remote API failed: {e}",
+        )
+        return False
+
+    # Hit the API "/status" endpoint to validate API key and cluster status
+    response = session.get(
+        f"{destination_api_uri}/status",
+        params=None,
+        data=None,
+    )
+    destination_cluster_status = response.json()
+    current_destination_pvc_version = destination_cluster_status.get(
+        "pvc_version", None
+    )
+    if current_destination_pvc_version is None:
+        fail(
+            celery,
+            "Connection to remote API failed: no PVC version information returned",
+        )
+        return False
+
+    expected_destination_pvc_version = "0.9.100"  # TODO: 0.9.101 when completed
+    # Work around development versions
+    current_destination_pvc_version = re.sub(
+        r"~git-.*", "", current_destination_pvc_version
+    )
+    # Compare versions
+    if parse_version(current_destination_pvc_version) < parse_version(
+        expected_destination_pvc_version
+    ):
+        fail(
+            celery,
+            f"Remote PVC cluster is too old: requires version {expected_destination_pvc_version} or higher",
+        )
+        return False
+
+    # Check if the VM already exists on the remote
+    response = session.get(
+        f"{destination_api_uri}/vm/{domain}",
+        params=None,
+        data=None,
+    )
+    destination_vm_detail = response.json()
+    if type(destination_vm_detail) is list and len(destination_vm_detail) > 0:
+        destination_vm_detail = destination_vm_detail[0]
+    else:
+        destination_vm_detail = {}
+
+    current_destination_vm_state = destination_vm_detail.get("state", None)
+    if (
+        current_destination_vm_state is not None
+        and current_destination_vm_state != "mirror"
+    ):
+        fail(
+            celery,
+            "Remote PVC VM exists and is not a mirror",
+        )
+        return False
+
+    # Get the list of all RBD volumes
+    rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
+
+    # VM shutdown stages
+    total_stages += 1
+    # Snapshot creation stages
+    total_stages += 1 + len(rbd_list)
+    # Snapshot sending stages
+    total_stages = 2 + (3 * len(rbd_list))
+    # Cleanup stages
+    total_stages += 2
+
+    #
+    # 1. Shut down VM
+    #
+
+    current_stage += 1
+    update(
+        celery,
+        f"Shutting down VM '{vm_name}'",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    retcode, retmsg = shutdown_vm(zkhandler, domain, wait=True)
+    if not retcode:
+        fail(
+            celery,
+            "Failed to shut down VM",
+        )
+        return False
+
+    #
+    # 2. Create snapshot
+    #
+
+    snap_list = list()
+
+    # If a snapshot fails, clean up any snapshots that were successfuly created
+    def cleanup_failure():
+        for snapshot in snap_list:
+            rbd, snapshot_name = snapshot.split("@")
+            pool, volume = rbd.split("/")
+            # We capture no output here, because if this fails too we're in a deep
+            # error chain and will just ignore it
+            ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
+
+    # Iterrate through and create a snapshot for each RBD volume
+    for rbd in rbd_list:
+        current_stage += 1
+        update(
+            celery,
+            f"Creating RBD snapshot of {rbd}",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        pool, volume = rbd.split("/")
+        ret, msg = ceph.add_snapshot(
+            zkhandler, pool, volume, snapshot_name, zk_only=False
+        )
+        if not ret:
+            cleanup_failure()
+            fail(
+                celery,
+                msg.replace("ERROR: ", ""),
+            )
+            return False
+        else:
+            snap_list.append(f"{pool}/{volume}@{snapshot_name}")
+
+    current_stage += 1
+    update(
+        celery,
+        "Creating VM configuration snapshot",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Get the current timestamp
+    tstart = time.time()
+    # Get the current domain XML
+    vm_config = zkhandler.read(("domain.xml", dom_uuid))
+
+    # Add the snapshot entry to Zookeeper
+    zkhandler.write(
+        [
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.name",
+                    snapshot_name,
+                ),
+                snapshot_name,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.timestamp",
+                    snapshot_name,
+                ),
+                tstart,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.xml",
+                    snapshot_name,
+                ),
+                vm_config,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.rbd_snapshots",
+                    snapshot_name,
+                ),
+                ",".join(snap_list),
+            ),
+        ]
+    )
+
+    #
+    # 2. Send snapshot to remote
+    #
+
+    # Determine if there's a valid shared snapshot to send an incremental diff from
+    local_snapshots = {s["name"] for s in vm_detail["snapshots"]}
+    remote_snapshots = {s["name"] for s in destination_vm_detail["snapshots"]}
+    incremental_parent = next(
+        (s for s in local_snapshots if s in remote_snapshots), None
+    )
+
+    current_stage += 1
+    update(
+        celery,
+        f"Sending VM configuration for {vm_name}@{snapshot_name}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    send_params = {
+        "snapshot": snapshot_name,
+        "source_snapshot": incremental_parent,
+    }
+    try:
+        response = session.post(
+            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
+            headers={"Content-Type": "application/json"},
+            params=send_params,
+            json=vm_detail,
+        )
+        response.raise_for_status()
+    except Exception as e:
+        fail(
+            celery,
+            f"Failed to send config: {e}",
+        )
+        return False
+
+    # Create the block devices on the remote side if this is a new VM send
+    block_t_start = time.time()
+    block_total_mb = 0
+
+    for rbd_detail in [r for r in vm_detail["disks"] if r["type"] == "rbd"]:
+        rbd_name = rbd_detail["name"]
+        pool, volume = rbd_name.split("/")
+
+        current_stage += 1
+        update(
+            celery,
+            f"Preparing remote volume for {rbd_name}@{snapshot_name}",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        # Get the storage volume details
+        retcode, retdata = ceph.get_list_volume(zkhandler, pool, volume, is_fuzzy=False)
+        if not retcode or len(retdata) != 1:
+            if len(retdata) < 1:
+                error_message = f"No detail returned for volume {rbd_name}"
+            elif len(retdata) > 1:
+                error_message = f"Multiple details returned for volume {rbd_name}"
+            else:
+                error_message = f"Error getting details for volume {rbd_name}"
+            fail(
+                celery,
+                error_message,
+            )
+            return False
+
+        try:
+            local_volume_size = ceph.format_bytes_fromhuman(retdata[0]["stats"]["size"])
+        except Exception as e:
+            error_message = f"Failed to get volume size for {rbd_name}: {e}"
+
+        if destination_storage_pool is not None:
+            pool = destination_storage_pool
+
+        current_stage += 1
+        update(
+            celery,
+            f"Checking remote volume {rbd_name} for compliance",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        # Check if the volume exists on the target
+        response = session.get(
+            f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
+            params=None,
+            data=None,
+        )
+        if response.status_code != 404 and current_destination_vm_state is None:
+            fail(
+                celery,
+                f"Remote storage pool {pool} already contains volume {volume}",
+            )
+            return False
+
+        if current_destination_vm_state is not None:
+            try:
+                remote_volume_size = ceph.format_bytes_fromhuman(
+                    response.json()[0]["stats"]["size"]
+                )
+            except Exception as e:
+                error_message = f"Failed to get volume size for remote {rbd_name}: {e}"
+                fail(celery, error_message)
+                return False
+
+            if local_volume_size != remote_volume_size:
+                response = session.put(
+                    f"{destination_api_uri}/storage/ceph/volume/{pool}/{volume}",
+                    params={"new_size": local_volume_size, "force": True},
+                )
+                if response.status_code != 200:
+                    fail(
+                        celery,
+                        "Failed to resize remote volume to match local volume",
+                    )
+                    return False
+
+        # Send the volume to the remote
+        cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
+        cluster.connect()
+        ioctx = cluster.open_ioctx(pool)
+        image = RBDImage(ioctx, name=volume, snapshot=snapshot_name, read_only=True)
+        size = image.size()
+        chunk_size_mb = 1024
+
+        if incremental_parent is not None:
+            # Diff between incremental_parent and snapshot
+            celery_message = (
+                f"Sending diff of {rbd_name}@{incremental_parent} → {snapshot_name}"
+            )
+        else:
+            # Full image transfer
+            celery_message = f"Sending full image of {rbd_name}@{snapshot_name}"
+
+        current_stage += 1
+        update(
+            celery,
+            celery_message,
+            current=current_stage,
+            total=total_stages,
+        )
+
+        if incremental_parent is not None:
+            # Createa single session to reuse connections
+            send_params = {
+                "pool": pool,
+                "volume": volume,
+                "snapshot": snapshot_name,
+                "source_snapshot": incremental_parent,
+            }
+
+            session.params.update(send_params)
+
+            # Send 32 objects (128MB) at once
+            send_max_objects = 32
+            batch_size_mb = 4 * send_max_objects
+            batch_size = batch_size_mb * 1024 * 1024
+
+            total_chunks = 0
+
+            def diff_cb_count(offset, length, exists):
+                nonlocal total_chunks
+                if exists:
+                    total_chunks += 1
+
+            current_chunk = 0
+            buffer = list()
+            buffer_size = 0
+            last_chunk_time = time.time()
+
+            def send_batch_multipart(buffer):
+                nonlocal last_chunk_time
+                files = {}
+                for i in range(len(buffer)):
+                    files[f"object_{i}"] = (
+                        f"object_{i}",
+                        buffer[i],
+                        "application/octet-stream",
+                    )
+                try:
+                    response = session.put(
+                        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                        files=files,
+                        stream=True,
+                    )
+                    response.raise_for_status()
+                except Exception as e:
+                    fail(
+                        celery,
+                        f"Failed to send diff batch ({e}): {response.json()['message']}",
+                    )
+                    return False
+
+                current_chunk_time = time.time()
+                chunk_time = current_chunk_time - last_chunk_time
+                last_chunk_time = current_chunk_time
+                chunk_speed = round(batch_size_mb / chunk_time, 1)
+                update(
+                    celery,
+                    celery_message + f" ({chunk_speed} MB/s)",
+                    current=current_stage,
+                    total=total_stages,
+                )
+
+            def add_block_to_multipart(buffer, offset, length, data):
+                part_data = (
+                    offset.to_bytes(8, "big") + length.to_bytes(8, "big") + data
+                )  # Add header and data
+                buffer.append(part_data)
+
+            def diff_cb_send(offset, length, exists):
+                nonlocal current_chunk, buffer, buffer_size
+                if exists:
+                    # Read the data for the current block
+                    data = image.read(offset, length)
+                    # Add the block to the multipart buffer
+                    add_block_to_multipart(buffer, offset, length, data)
+                    current_chunk += 1
+                    buffer_size += len(data)
+                    if buffer_size >= batch_size:
+                        send_batch_multipart(buffer)
+                        buffer.clear()  # Clear the buffer after sending
+                        buffer_size = 0  # Reset buffer size
+
+            try:
+                image.set_snap(snapshot_name)
+                image.diff_iterate(
+                    0, size, incremental_parent, diff_cb_count, whole_object=True
+                )
+                block_total_mb += total_chunks * 4
+                image.diff_iterate(
+                    0, size, incremental_parent, diff_cb_send, whole_object=True
+                )
+
+                if buffer:
+                    send_batch_multipart(buffer)
+                    buffer.clear()  # Clear the buffer after sending
+                    buffer_size = 0  # Reset buffer size
+            except Exception:
+                fail(
+                    celery,
+                    f"Failed to send snapshot: {response.json()['message']}",
+                )
+                return False
+            finally:
+                image.close()
+                ioctx.close()
+                cluster.shutdown()
+        else:
+
+            def full_chunker():
+                nonlocal block_total_mb
+                chunk_size = 1024 * 1024 * chunk_size_mb
+                current_chunk = 0
+                last_chunk_time = time.time()
+                while current_chunk < size:
+                    chunk = image.read(current_chunk, chunk_size)
+                    yield chunk
+                    current_chunk += chunk_size
+                    block_total_mb += len(chunk) / 1024 / 1024
+                    current_chunk_time = time.time()
+                    chunk_time = current_chunk_time - last_chunk_time
+                    last_chunk_time = current_chunk_time
+                    chunk_speed = round(chunk_size_mb / chunk_time, 1)
+                    update(
+                        celery,
+                        celery_message + f" ({chunk_speed} MB/s)",
+                        current=current_stage,
+                        total=total_stages,
+                    )
+
+            send_params = {
+                "pool": pool,
+                "volume": volume,
+                "snapshot": snapshot_name,
+                "size": size,
+                "source_snapshot": incremental_parent,
+            }
+
+            try:
+                response = session.post(
+                    f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                    headers={"Content-Type": "application/octet-stream"},
+                    params=send_params,
+                    data=full_chunker(),
+                )
+                response.raise_for_status()
+            except Exception:
+                fail(
+                    celery,
+                    f"Failed to send snapshot: {response.json()['message']}",
+                )
+                return False
+            finally:
+                image.close()
+                ioctx.close()
+                cluster.shutdown()
+
+        send_params = {
+            "pool": pool,
+            "volume": volume,
+            "snapshot": snapshot_name,
+        }
+        try:
+            response = session.patch(
+                f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                params=send_params,
+            )
+            response.raise_for_status()
+        except Exception:
+            fail(
+                celery,
+                f"Failed to send snapshot: {response.json()['message']}",
+            )
+            return False
+        finally:
+            image.close()
+            ioctx.close()
+            cluster.shutdown()
+
+    block_t_end = time.time()
+    block_mbps = round(block_total_mb / (block_t_end - block_t_start), 1)
+
+    #
+    # 4. Start VM on remote
+    #
+
+    current_stage += 1
+    update(
+        celery,
+        f"Starting VM '{vm_name}' on remote cluster",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    try:
+        response = session.post(
+            f"{destination_api_uri}/vm/{vm_name}/state",
+            headers={"Content-Type": "application/octet-stream"},
+            params={"state": "start", "wait": True},
+            data=full_chunker(),
+        )
+        response.raise_for_status()
+    except Exception:
+        fail(
+            celery,
+            f"Failed to send snapshot: {response.json()['message']}",
+        )
+        return False
+
+    # 5. Set mirror state OR remove VM
+    if remove_on_source:
+        current_stage += 1
+        update(
+            celery,
+            f"Removing VM '{vm_name}' from local cluster",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        retcode, retmsg = remove_vm(zkhandler, domain)
+    else:
+        current_stage += 1
+        update(
+            celery,
+            f"Setting VM '{vm_name}' state to mirror on local cluster",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        change_state(zkhandler, dom_uuid, "mirror")
+
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully promoted VM '{domain}' (snapshot '{snapshot_name}') on remote cluster '{destination_api_uri}' (average {block_mbps} MB/s)",
         current=current_stage,
         total=total_stages,
     )
