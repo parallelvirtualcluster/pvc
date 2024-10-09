@@ -4211,7 +4211,7 @@ class API_VM_Mirror_Promote(Resource):
             strtobool(reqargs.get("destination_api_verify_ssl", "true"))
         )
         destination_storage_pool = reqargs.get("destination_storage_pool", None)
-        remove_on_source = reqargs.get("remove_on_source", False)
+        remove_on_source = bool(strtobool(reqargs.get("remove_on_source", "false")))
 
         task = run_celery_task(
             "vm.promote_mirror",
