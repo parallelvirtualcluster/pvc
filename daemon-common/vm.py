@@ -3958,6 +3958,9 @@ def vm_worker_create_mirror(
     # 2. Send snapshot to remote
     #
 
+    # Re-get our side's VM configuration details (since we now have the snapshot)
+    vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
+
     # Determine if there's a valid shared snapshot to send an incremental diff from
     if destination_vm_detail:
         local_snapshots = {s["name"] for s in vm_detail["snapshots"]}
@@ -4570,8 +4573,11 @@ def vm_worker_promote_mirror(
     )
 
     #
-    # 2. Send snapshot to remote
+    # 3. Send snapshot to remote
     #
+
+    # Re-get our side's VM configuration details (since we now have the snapshot)
+    vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
 
     # Determine if there's a valid shared snapshot to send an incremental diff from
     local_snapshots = {s["name"] for s in vm_detail["snapshots"]}
@@ -4922,7 +4928,10 @@ def vm_worker_promote_mirror(
         )
         return False
 
+    #
     # 5. Set mirror state OR remove VM
+    #
+
     if remove_on_source:
         current_stage += 1
         update(
