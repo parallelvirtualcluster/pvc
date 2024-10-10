@@ -4455,6 +4455,8 @@ def vm_worker_promote_mirror(
     # Get the list of all RBD volumes
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
 
+    previous_vm_state = vm_detail["state"]
+
     # VM shutdown stages
     total_stages += 1
     # Snapshot creation stages
@@ -4915,10 +4917,14 @@ def vm_worker_promote_mirror(
     # 4. Start VM on remote
     #
 
+    if previous_vm_state not in ["start", "stop", "disable"]:
+        # Start up the VM if it was somehow in any other state
+        previous_vm_state = "start"
+
     current_stage += 1
     update(
         celery,
-        f"Starting VM '{vm_name}' on remote cluster",
+        f"Setting state '{previous_vm_state}' for VM '{vm_name}' on remote cluster",
         current=current_stage,
         total=total_stages,
     )
@@ -4927,7 +4933,7 @@ def vm_worker_promote_mirror(
         response = session.post(
             f"{destination_api_uri}/vm/{vm_name}/state",
             headers={"Content-Type": "application/octet-stream"},
-            params={"state": "start", "wait": True, "force": True},
+            params={"state": previous_vm_state, "wait": True, "force": True},
         )
         response.raise_for_status()
     except Exception:
