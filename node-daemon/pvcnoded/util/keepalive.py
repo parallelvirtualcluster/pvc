@@ -756,29 +756,21 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
 
     # Join against running threads
     if config["enable_hypervisor"]:
-        vm_stats_thread.join(timeout=config["keepalive_interval"])
+        vm_stats_thread.join(timeout=config["keepalive_interval"] - 1)
         if vm_stats_thread.is_alive():
             logger.out("VM stats gathering exceeded timeout, continuing", state="w")
     if config["enable_storage"]:
-        ceph_stats_thread.join(timeout=config["keepalive_interval"])
+        ceph_stats_thread.join(timeout=config["keepalive_interval"] - 1)
         if ceph_stats_thread.is_alive():
             logger.out("Ceph stats gathering exceeded timeout, continuing", state="w")
 
     # Get information from thread queues
     if config["enable_hypervisor"]:
         try:
-            this_node.domains_count = vm_thread_queue.get(
-                timeout=config["keepalive_interval"]
-            )
-            this_node.memalloc = vm_thread_queue.get(
-                timeout=config["keepalive_interval"]
-            )
-            this_node.memprov = vm_thread_queue.get(
-                timeout=config["keepalive_interval"]
-            )
-            this_node.vcpualloc = vm_thread_queue.get(
-                timeout=config["keepalive_interval"]
-            )
+            this_node.domains_count = vm_thread_queue.get(timeout=0.1)
+            this_node.memalloc = vm_thread_queue.get(timeout=0.1)
+            this_node.memprov = vm_thread_queue.get(timeout=0.1)
+            this_node.vcpualloc = vm_thread_queue.get(timeout=0.1)
         except Exception:
             logger.out("VM stats queue get exceeded timeout, continuing", state="w")
     else:
@@ -789,9 +781,7 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
 
     if config["enable_storage"]:
         try:
-            osds_this_node = ceph_thread_queue.get(
-                timeout=(config["keepalive_interval"] - 1)
-            )
+            osds_this_node = ceph_thread_queue.get(timeout=0.1)
         except Exception:
             logger.out("Ceph stats queue get exceeded timeout, continuing", state="w")
             osds_this_node = "?"
