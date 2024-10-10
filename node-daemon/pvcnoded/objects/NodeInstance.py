@@ -438,8 +438,11 @@ class NodeInstance(object):
         # Synchronize nodes B (I am reader)
         lock = self.zkhandler.readlock("base.config.primary_node.sync_lock")
         self.logger.out("Acquiring read lock for synchronization phase B", state="i")
-        lock.acquire()
-        self.logger.out("Acquired read lock for synchronization phase B", state="o")
+        try:
+            lock.acquire(timeout=5)  # Don't wait forever and completely block us
+            self.logger.out("Acquired read lock for synchronization phase G", state="o")
+        except Exception:
+            pass
         self.logger.out("Releasing read lock for synchronization phase B", state="i")
         lock.release()
         self.logger.out("Released read lock for synchronization phase B", state="o")
@@ -648,8 +651,11 @@ class NodeInstance(object):
         # Synchronize nodes A (I am reader)
         lock = self.zkhandler.readlock("base.config.primary_node.sync_lock")
         self.logger.out("Acquiring read lock for synchronization phase A", state="i")
-        lock.acquire()
-        self.logger.out("Acquired read lock for synchronization phase A", state="o")
+        try:
+            lock.acquire(timeout=5)  # Don't wait forever and completely block us
+            self.logger.out("Acquired read lock for synchronization phase G", state="o")
+        except Exception:
+            pass
         self.logger.out("Releasing read lock for synchronization phase A", state="i")
         lock.release()
         self.logger.out("Released read lock for synchronization phase A", state="o")
@@ -682,8 +688,11 @@ class NodeInstance(object):
         # Synchronize nodes C (I am reader)
         lock = self.zkhandler.readlock("base.config.primary_node.sync_lock")
         self.logger.out("Acquiring read lock for synchronization phase C", state="i")
-        lock.acquire()
-        self.logger.out("Acquired read lock for synchronization phase C", state="o")
+        try:
+            lock.acquire(timeout=5)  # Don't wait forever and completely block us
+            self.logger.out("Acquired read lock for synchronization phase G", state="o")
+        except Exception:
+            pass
         # 5. Remove Upstream floating IP
         self.logger.out(
             "Removing floating upstream IP {}/{} from interface {}".format(
@@ -701,8 +710,11 @@ class NodeInstance(object):
         # Synchronize nodes D (I am reader)
         lock = self.zkhandler.readlock("base.config.primary_node.sync_lock")
         self.logger.out("Acquiring read lock for synchronization phase D", state="i")
-        lock.acquire()
-        self.logger.out("Acquired read lock for synchronization phase D", state="o")
+        try:
+            lock.acquire(timeout=5)  # Don't wait forever and completely block us
+            self.logger.out("Acquired read lock for synchronization phase G", state="o")
+        except Exception:
+            pass
         # 6. Remove Cluster & Storage floating IP
         self.logger.out(
             "Removing floating management IP {}/{} from interface {}".format(
@@ -729,8 +741,11 @@ class NodeInstance(object):
         # Synchronize nodes E (I am reader)
         lock = self.zkhandler.readlock("base.config.primary_node.sync_lock")
         self.logger.out("Acquiring read lock for synchronization phase E", state="i")
-        lock.acquire()
-        self.logger.out("Acquired read lock for synchronization phase E", state="o")
+        try:
+            lock.acquire(timeout=5)  # Don't wait forever and completely block us
+            self.logger.out("Acquired read lock for synchronization phase G", state="o")
+        except Exception:
+            pass
         # 7. Remove Metadata link-local IP
         self.logger.out(
             "Removing Metadata link-local IP {}/{} from interface {}".format(
@@ -746,8 +761,11 @@ class NodeInstance(object):
         # Synchronize nodes F (I am reader)
         lock = self.zkhandler.readlock("base.config.primary_node.sync_lock")
         self.logger.out("Acquiring read lock for synchronization phase F", state="i")
-        lock.acquire()
-        self.logger.out("Acquired read lock for synchronization phase F", state="o")
+        try:
+            lock.acquire(timeout=5)  # Don't wait forever and completely block us
+            self.logger.out("Acquired read lock for synchronization phase G", state="o")
+        except Exception:
+            pass
         # 8. Remove gateway IPs
         for network in self.d_network:
             self.d_network[network].removeGateways()
@@ -759,7 +777,7 @@ class NodeInstance(object):
         lock = self.zkhandler.readlock("base.config.primary_node.sync_lock")
         self.logger.out("Acquiring read lock for synchronization phase G", state="i")
         try:
-            lock.acquire(timeout=60)  # Don't wait forever and completely block us
+            lock.acquire(timeout=5)  # Don't wait forever and completely block us
             self.logger.out("Acquired read lock for synchronization phase G", state="o")
         except Exception:
             pass
