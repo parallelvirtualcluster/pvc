@@ -2279,6 +2279,7 @@ def cli_vm_mirror_create(
     show_default=True,
     help="Wait or don't wait for task to complete, showing progress if waiting",
 )
+@confirm_opt("Promote VM {domain} on cluster {destination} (will shut down VM)")
 def cli_vm_mirror_promote(
     domain,
     destination,
