@@ -1505,6 +1505,14 @@ def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=N
     vm_xml_diff = "\n".join(current_snapshot["xml_diff_lines"])
     snapshot_vm_xml = parse_unified_diff(vm_xml_diff, vm_xml)
 
+    # Replace the Ceph storage secret UUID with this cluster's
+    our_ceph_secret_uuid = config["ceph_secret_uuid"]
+    xml_data = etree.fromstring(snapshot_vm_xml)
+    ceph_secrets = xml_data.xpath("//secret[@type='ceph']")
+    for ceph_secret in ceph_secrets:
+        ceph_secret.set("uuid", our_ceph_secret_uuid)
+    snapshot_vm_xml = etree.tostring(xml_data, pretty_print=True).decode("utf8")
+
     if (
         source_snapshot is not None
         or pvc_vm.searchClusterByUUID(zkhandler, vm_config["uuid"]) is not None
