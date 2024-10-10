@@ -21,15 +21,72 @@
 
 import time
 
+from kazoo.exceptions import LockTimeout
+
 import daemon_lib.common as common
 
 from daemon_lib.vm import vm_worker_flush_locks
 
 
 #
-# Fence thread entry function
+# Fence monitor thread entrypoint
 #
-def fence_node(node_name, zkhandler, config, logger):
+def fence_monitor(zkhandler, config, logger):
+    # Attempt to acquire an exclusive lock on the fence_lock key
+    # If it is already held, we'll abort since another node is processing fences
+    lock = zkhandler.exclusivelock("base.config.fence_lock")
+
+    try:
+        lock.acquire(timeout=config["keepalive_interval"] - 1)
+
+        for node_name in zkhandler.children("base.node"):
+            try:
+                node_daemon_state = zkhandler.read(("node.state.daemon", node_name))
+                node_keepalive = int(zkhandler.read(("node.keepalive", node_name)))
+            except Exception:
+                node_daemon_state = "unknown"
+                node_keepalive = 0
+
+            node_deadtime = int(time.time()) - (
+                int(config["keepalive_interval"]) * int(config["fence_intervals"])
+            )
+            if node_keepalive < node_deadtime and node_daemon_state == "run":
+                logger.out(
+                    f"Node {node_name} seems dead; starting monitor for fencing",
+                    state="w",
+                )
+                zk_lock = zkhandler.writelock(("node.state.daemon", node_name))
+                with zk_lock:
+                    # Ensures that, if we lost the lock race and come out of waiting,
+                    # we won't try to trigger our own fence thread.
+                    if zkhandler.read(("node.state.daemon", node_name)) != "dead":
+                        # Write the updated data after we start the fence thread
+                        zkhandler.write([(("node.state.daemon", node_name), "dead")])
+                        # Start the fence monitoring task for this node
+                        # NOTE: This is not a subthread and is designed to block this for loop
+                        # This ensures that only one node is ever being fenced at a time
+                        fence_node(zkhandler, config, logger, node_name)
+            else:
+                logger.out(
+                    f"Node {node_name} is OK; last checkin is {node_deadtime - node_keepalive}s from threshold, node state is '{node_daemon_state}'",
+                    state="d",
+                    prefix="fence-thread",
+                )
+    except LockTimeout:
+        logger.out(
+            "Fence monitor thread failed to acquire exclusive lock; skipping", state="i"
+        )
+    except Exception as e:
+        logger.out(f"Fence monitor thread failed: {e}", state="w")
+    finally:
+        # We're finished, so release the global lock
+        lock.release()
+
+
+#
+# Fence action function
+#
+def fence_node(zkhandler, config, logger, node_name):
     # We allow exactly 6 saving throws (30 seconds) for the host to come back online or we kill it
     failcount_limit = 6
     failcount = 0
@@ -202,6 +259,9 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
 
     # Loop through the VMs
     for dom_uuid in dead_node_running_domains:
+        if dom_uuid in ["0", 0]:
+            # Skip the invalid "0" UUID we sometimes get
+            continue
         try:
             fence_migrate_vm(dom_uuid)
         except Exception as e:

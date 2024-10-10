@@ -576,7 +576,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 14
+    _version = 15
 
     # Root for doing nested keys
     _schema_root = ""
@@ -592,6 +592,7 @@ class ZKSchema(object):
             "schema.version": f"{_schema_root}/schema/version",
             "config": f"{_schema_root}/config",
             "config.maintenance": f"{_schema_root}/config/maintenance",
+            "config.fence_lock": f"{_schema_root}/config/fence_lock",
             "config.primary_node": f"{_schema_root}/config/primary_node",
             "config.primary_node.sync_lock": f"{_schema_root}/config/primary_node/sync_lock",
             "config.upstream_ip": f"{_schema_root}/config/upstream_ip",

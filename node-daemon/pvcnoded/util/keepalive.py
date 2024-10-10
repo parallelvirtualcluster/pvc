@@ -877,44 +877,12 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
             )
 
     # Look for dead nodes and fence them
-    if not this_node.maintenance:
+    if not this_node.maintenance and config["daemon_mode"] == "coordinator":
         logger.out(
             "Look for dead nodes and fence them", state="d", prefix="main-thread"
         )
-        if config["daemon_mode"] == "coordinator":
-            for node_name in zkhandler.children("base.node"):
-                try:
-                    node_daemon_state = zkhandler.read(("node.state.daemon", node_name))
-                    node_keepalive = int(zkhandler.read(("node.keepalive", node_name)))
-                except Exception:
-                    node_daemon_state = "unknown"
-                    node_keepalive = 0
-
-                # Handle deadtime and fencng if needed
-                # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
-                # out-of-date while in 'start' state)
-                node_deadtime = int(time.time()) - (
-                    int(config["keepalive_interval"]) * int(config["fence_intervals"])
-                )
-                if node_keepalive < node_deadtime and node_daemon_state == "run":
-                    logger.out(
-                        "Node {} seems dead - starting monitor for fencing".format(
-                            node_name
-                        ),
-                        state="w",
-                    )
-                    zk_lock = zkhandler.writelock(("node.state.daemon", node_name))
-                    with zk_lock:
-                        # Ensures that, if we lost the lock race and come out of waiting,
-                        # we won't try to trigger our own fence thread.
-                        if zkhandler.read(("node.state.daemon", node_name)) != "dead":
-                            fence_thread = Thread(
-                                target=pvcnoded.util.fencing.fence_node,
-                                args=(node_name, zkhandler, config, logger),
-                                kwargs={},
-                            )
-                            fence_thread.start()
-                            # Write the updated data after we start the fence thread
-                            zkhandler.write(
-                                [(("node.state.daemon", node_name), "dead")]
-                            )
+        fence_monitor_thread = Thread(
+            target=pvcnoded.util.fencing.fence_monitor,
+            args=(zkhandler, config, logger),
+        )
+        fence_monitor_thread.start()
