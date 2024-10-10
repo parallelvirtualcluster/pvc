@@ -30,7 +30,7 @@ from kazoo.client import KazooClient, KazooState
 from kazoo.exceptions import NoNodeError
 
 
-SCHEMA_ROOT_PATH = "/usr/share/pvc/daemon_lib/migrations/versions"
+SCHEMA_ROOT_PATH = "daemon_lib/migrations/versions"
 
 
 #
