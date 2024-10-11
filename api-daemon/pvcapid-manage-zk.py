@@ -21,4 +21,5 @@
 
 from daemon_lib.zkhandler import ZKSchema
 
-ZKSchema.write()
+schema = ZKSchema(root_path=".")
+schema.write()

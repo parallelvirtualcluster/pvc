@@ -30,7 +30,8 @@ from kazoo.client import KazooClient, KazooState
 from kazoo.exceptions import NoNodeError
 
 
-SCHEMA_ROOT_PATH = "daemon_lib/migrations/versions"
+DEFAULT_ROOT_PATH = "/usr/share/pvc"
+SCHEMA_PATH = "daemon_lib/migrations/versions"
 
 
 #
@@ -832,8 +833,8 @@ class ZKSchema(object):
     def schema(self, schema):
         self._schema = schema
 
-    def __init__(self):
-        pass
+    def __init__(self, root_path=DEFAULT_ROOT_PATH):
+        self.schema_path = f"{root_path}/{SCHEMA_PATH}"
 
     def __repr__(self):
         return f"ZKSchema({self.version})"
@@ -873,7 +874,7 @@ class ZKSchema(object):
         if not quiet:
             print(f"Loading schema version {version}")
 
-        with open(f"{SCHEMA_ROOT_PATH}/{version}.json", "r") as sfh:
+        with open(f"{self.schema_path}/{version}.json", "r") as sfh:
             self.schema = json.load(sfh)
             self.version = self.schema.get("version")
 
@@ -1135,7 +1136,7 @@ class ZKSchema(object):
     # Migrate from older to newer schema
     def migrate(self, zkhandler, new_version):
         # Determine the versions in between
-        versions = ZKSchema.find_all(start=self.version, end=new_version)
+        versions = self.find_all(start=self.version, end=new_version)
         if versions is None:
             return
 
@@ -1151,7 +1152,7 @@ class ZKSchema(object):
     # Rollback from newer to older schema
     def rollback(self, zkhandler, old_version):
         # Determine the versions in between
-        versions = ZKSchema.find_all(start=old_version - 1, end=self.version - 1)
+        versions = self.find_all(start=old_version - 1, end=self.version - 1)
         if versions is None:
             return
 
@@ -1165,6 +1166,12 @@ class ZKSchema(object):
             changes = ZKSchema.key_diff(self, zkschema_old)
             # Apply those changes
             self.run_migrate(zkhandler, changes)
+
+    # Write the latest schema to a file
+    def write(self):
+        schema_file = f"{self.schema_path}/{self._version}.json"
+        with open(schema_file, "w") as sfh:
+            json.dump(self._schema, sfh)
 
     @classmethod
     def key_diff(cls, schema_a, schema_b):
@@ -1211,26 +1218,10 @@ class ZKSchema(object):
 
         return {"add": diff_add, "remove": diff_remove, "rename": diff_rename}
 
-    # Load in the schemal of the current cluster
-    @classmethod
-    def load_current(cls, zkhandler):
-        new_instance = cls()
-        version = new_instance.get_version(zkhandler)
-        new_instance.load(version)
-        return new_instance
-
-    # Write the latest schema to a file
-    @classmethod
-    def write(cls):
-        schema_file = f"{SCHEMA_ROOT_PATH}/{cls._version}.json"
-        with open(schema_file, "w") as sfh:
-            json.dump(cls._schema, sfh)
-
     # Static methods for reading information from the files
-    @staticmethod
-    def find_all(start=0, end=None):
+    def find_all(self, start=0, end=None):
         versions = list()
-        for version in os.listdir(SCHEMA_ROOT_PATH):
+        for version in os.listdir(self.schema_path):
             sequence_id = int(version.split(".")[0])
             if end is None:
                 if sequence_id > start:
@@ -1243,11 +1234,18 @@ class ZKSchema(object):
         else:
             return None
 
-    @staticmethod
-    def find_latest():
+    def find_latest(self):
         latest_version = 0
-        for version in os.listdir(SCHEMA_ROOT_PATH):
+        for version in os.listdir(self.schema_path):
             sequence_id = int(version.split(".")[0])
             if sequence_id > latest_version:
                 latest_version = sequence_id
         return latest_version
+
+    # Load in the schema of the current cluster
+    @classmethod
+    def load_current(cls, zkhandler):
+        new_instance = cls()
+        version = new_instance.get_version(zkhandler)
+        new_instance.load(version)
+        return new_instance
