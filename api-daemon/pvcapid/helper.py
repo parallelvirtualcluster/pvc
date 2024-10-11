@@ -1432,7 +1432,7 @@ def vm_snapshot_receive_block_createsnap(zkhandler, pool, volume, snapshot):
         output = {"message": retdata.replace('"', "'")}
         return output, retcode
 
-    return {"message": "Successfully received VM configuration data"}, 200
+    return {"message": "Successfully received RBD snapshot"}, 200
 
 
 @ZKConnection(config)
@@ -1448,7 +1448,6 @@ def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=N
     First, we need to determine if this is an incremental or full send. If it's full, and the VM already exists,
     this is an issue and we have to error. But this should have already happened with the RBD volumes.
     """
-    print(vm_config)
 
     def parse_unified_diff(diff_text, original_text):
         """
@@ -1528,6 +1527,11 @@ def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=N
             False,
             snapshot_vm_xml,
         )
+        if not retcode:
+            retcode = 400
+            retdata = {"message": retmsg}
+            return retdata, retcode
+
         retcode, retmsg = pvc_vm.modify_vm_metadata(
             zkhandler,
             vm_config["uuid"],
@@ -1538,6 +1542,10 @@ def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=N
             vm_config["migration_method"],
             vm_config["migration_max_downtime"],
         )
+        if not retcode:
+            retcode = 400
+            retdata = {"message": retmsg}
+            return retdata, retcode
 
         current_vm_tags = zkhandler.children(("domain.meta.tags", vm_config["uuid"]))
         new_vm_tags = [t["name"] for t in vm_config["tags"]]
@@ -1576,6 +1584,10 @@ def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=N
             vm_config["tags"],
             "mirror",
         )
+        if not retcode:
+            retcode = 400
+            retdata = {"message": retmsg}
+            return retdata, retcode
 
     # Add this snapshot to the VM manually in Zookeeper
     zkhandler.write(
@@ -1618,6 +1630,8 @@ def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=N
             ),
         ]
     )
+
+    return {"message": "Successfully received VM configuration snapshot"}, 200
 
 
 #
