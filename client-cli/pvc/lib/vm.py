@@ -1861,7 +1861,7 @@ def format_info(config, domain_information, long_output):
         "provision": ansiprint.blue(),
         "restore": ansiprint.blue(),
         "import": ansiprint.blue(),
-        "mirror": ansiprint.blue(),
+        "mirror": ansiprint.purple(),
     }
     ainformation.append(
         "{}State:{}              {}{}{}".format(
@@ -2371,16 +2371,14 @@ def format_list(config, vm_list):
 
     # Format the string (elements)
     for domain_information in sorted(vm_list, key=lambda v: v["name"]):
-        if domain_information["state"] == "start":
+        if domain_information["state"] in ["start"]:
             vm_state_colour = ansiprint.green()
-        elif domain_information["state"] == "restart":
+        elif domain_information["state"] in ["restart", "shutdown"]:
             vm_state_colour = ansiprint.yellow()
-        elif domain_information["state"] == "shutdown":
-            vm_state_colour = ansiprint.yellow()
-        elif domain_information["state"] == "stop":
+        elif domain_information["state"] in ["stop", "fail"]:
             vm_state_colour = ansiprint.red()
-        elif domain_information["state"] == "fail":
-            vm_state_colour = ansiprint.red()
+        elif domain_information["state"] in ["mirror"]:
+            vm_state_colour = ansiprint.purple()
         else:
             vm_state_colour = ansiprint.blue()
 
