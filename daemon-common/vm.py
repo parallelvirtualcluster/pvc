@@ -3389,18 +3389,17 @@ def vm_worker_send_snapshot(
         "snapshot": snapshot_name,
         "source_snapshot": incremental_parent,
     }
-    try:
-        response = session.post(
-            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
-            headers={"Content-Type": "application/json"},
-            params=send_params,
-            json=vm_detail,
-        )
-        response.raise_for_status()
-    except Exception as e:
+
+    response = session.post(
+        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
+        headers={"Content-Type": "application/json"},
+        params=send_params,
+        json=vm_detail,
+    )
+    if response.status_code != 200:
         fail(
             celery,
-            f"Failed to send config: {e}",
+            f"Failed to send config: {response.json()['message']}",
         )
         return False
 
@@ -3548,17 +3547,16 @@ def vm_worker_send_snapshot(
                         buffer[i],
                         "application/octet-stream",
                     )
-                try:
-                    response = session.put(
-                        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
-                        files=files,
-                        stream=True,
-                    )
-                    response.raise_for_status()
-                except Exception as e:
+
+                response = session.put(
+                    f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                    files=files,
+                    stream=True,
+                )
+                if response.status_code != 200:
                     fail(
                         celery,
-                        f"Failed to send diff batch ({e}): {response.json()['message']}",
+                        f"Failed to send diff batch: {response.json()['message']}",
                     )
                     return False
 
@@ -3655,13 +3653,12 @@ def vm_worker_send_snapshot(
                     params=send_params,
                     data=full_chunker(),
                 )
-                response.raise_for_status()
-            except Exception:
-                fail(
-                    celery,
-                    f"Failed to send snapshot: {response.json()['message']}",
-                )
-                return False
+                if response.status_code != 200:
+                    fail(
+                        celery,
+                        f"Failed to send snapshot: {response.json()['message']}",
+                    )
+                    return False
             finally:
                 image.close()
                 ioctx.close()
@@ -3677,13 +3674,12 @@ def vm_worker_send_snapshot(
                 f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
                 params=send_params,
             )
-            response.raise_for_status()
-        except Exception:
-            fail(
-                celery,
-                f"Failed to send snapshot: {response.json()['message']}",
-            )
-            return False
+            if response.status_code != 200:
+                fail(
+                    celery,
+                    f"Failed to send snapshot: {response.json()['message']}",
+                )
+                return False
         finally:
             image.close()
             ioctx.close()
@@ -3983,18 +3979,17 @@ def vm_worker_create_mirror(
         "snapshot": snapshot_name,
         "source_snapshot": incremental_parent,
     }
-    try:
-        response = session.post(
-            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
-            headers={"Content-Type": "application/json"},
-            params=send_params,
-            json=vm_detail,
-        )
-        response.raise_for_status()
-    except Exception as e:
+
+    response = session.post(
+        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
+        headers={"Content-Type": "application/json"},
+        params=send_params,
+        json=vm_detail,
+    )
+    if response.status_code != 200:
         fail(
             celery,
-            f"Failed to send config: {e}",
+            f"Failed to send config: {response.json()['message']}",
         )
         return False
 
@@ -4142,17 +4137,16 @@ def vm_worker_create_mirror(
                         buffer[i],
                         "application/octet-stream",
                     )
-                try:
-                    response = session.put(
-                        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
-                        files=files,
-                        stream=True,
-                    )
-                    response.raise_for_status()
-                except Exception as e:
+
+                response = session.put(
+                    f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                    files=files,
+                    stream=True,
+                )
+                if response.status_code != 200:
                     fail(
                         celery,
-                        f"Failed to send diff batch ({e}): {response.json()['message']}",
+                        f"Failed to send diff batch: {response.json()['message']}",
                     )
                     return False
 
@@ -4249,13 +4243,12 @@ def vm_worker_create_mirror(
                     params=send_params,
                     data=full_chunker(),
                 )
-                response.raise_for_status()
-            except Exception:
-                fail(
-                    celery,
-                    f"Failed to create mirror: {response.json()['message']}",
-                )
-                return False
+                if response.status_code != 200:
+                    fail(
+                        celery,
+                        f"Failed to create mirror: {response.json()['message']}",
+                    )
+                    return False
             finally:
                 image.close()
                 ioctx.close()
@@ -4271,13 +4264,12 @@ def vm_worker_create_mirror(
                 f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
                 params=send_params,
             )
-            response.raise_for_status()
-        except Exception:
-            fail(
-                celery,
-                f"Failed to create mirror: {response.json()['message']}",
-            )
-            return False
+            if response.status_code != 200:
+                fail(
+                    celery,
+                    f"Failed to create mirror: {response.json()['message']}",
+                )
+                return False
         finally:
             image.close()
             ioctx.close()
@@ -4610,18 +4602,17 @@ def vm_worker_promote_mirror(
         "snapshot": snapshot_name,
         "source_snapshot": incremental_parent,
     }
-    try:
-        response = session.post(
-            f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
-            headers={"Content-Type": "application/json"},
-            params=send_params,
-            json=vm_detail,
-        )
-        response.raise_for_status()
-    except Exception as e:
+
+    response = session.post(
+        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
+        headers={"Content-Type": "application/json"},
+        params=send_params,
+        json=vm_detail,
+    )
+    if response.status_code != 200:
         fail(
             celery,
-            f"Failed to send config: {e}",
+            f"Failed to send config: {response.json()['message']}",
         )
         return False
 
@@ -4769,17 +4760,16 @@ def vm_worker_promote_mirror(
                         buffer[i],
                         "application/octet-stream",
                     )
-                try:
-                    response = session.put(
-                        f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
-                        files=files,
-                        stream=True,
-                    )
-                    response.raise_for_status()
-                except Exception as e:
+
+                response = session.put(
+                    f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
+                    files=files,
+                    stream=True,
+                )
+                if response.status_code != 200:
                     fail(
                         celery,
-                        f"Failed to send diff batch ({e}): {response.json()['message']}",
+                        f"Failed to send diff batch: {response.json()['message']}",
                     )
                     return False
 
@@ -4876,13 +4866,12 @@ def vm_worker_promote_mirror(
                     params=send_params,
                     data=full_chunker(),
                 )
-                response.raise_for_status()
-            except Exception:
-                fail(
-                    celery,
-                    f"Failed to promote mirror: {response.json()['message']}",
-                )
-                return False
+                if response.status_code != 200:
+                    fail(
+                        celery,
+                        f"Failed to promote mirror: {response.json()['message']}",
+                    )
+                    return False
             finally:
                 image.close()
                 ioctx.close()
@@ -4898,13 +4887,12 @@ def vm_worker_promote_mirror(
                 f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/block",
                 params=send_params,
             )
-            response.raise_for_status()
-        except Exception:
-            fail(
-                celery,
-                f"Failed to promote mirror: {response.json()['message']}",
-            )
-            return False
+            if response.status_code != 200:
+                fail(
+                    celery,
+                    f"Failed to promote mirror: {response.json()['message']}",
+                )
+                return False
         finally:
             image.close()
             ioctx.close()
@@ -4929,14 +4917,12 @@ def vm_worker_promote_mirror(
         total=total_stages,
     )
 
-    try:
-        response = session.post(
-            f"{destination_api_uri}/vm/{vm_name}/state",
-            headers={"Content-Type": "application/octet-stream"},
-            params={"state": previous_vm_state, "wait": True, "force": True},
-        )
-        response.raise_for_status()
-    except Exception:
+    response = session.post(
+        f"{destination_api_uri}/vm/{vm_name}/state",
+        headers={"Content-Type": "application/octet-stream"},
+        params={"state": previous_vm_state, "wait": True, "force": True},
+    )
+    if response.status_code != 200:
         fail(
             celery,
             f"Failed to promote mirror: {response.json()['message']}",
