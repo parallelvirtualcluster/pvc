@@ -2402,8 +2402,10 @@ def format_list(config, vm_list):
             else:
                 net_invalid_list.append(False)
 
+        display_net_string_list = []
         net_string_list = []
         for net_idx, net_vni in enumerate(net_list):
+            display_net_string_list.append(net_vni)
             if net_invalid_list[net_idx]:
                 net_string_list.append(
                     "{}{}{}".format(
@@ -2428,7 +2430,9 @@ def format_list(config, vm_list):
                 vm_state_length=vm_state_length,
                 vm_tags_length=vm_tags_length,
                 vm_snapshots_length=vm_snapshots_length,
-                vm_nets_length=vm_nets_length,
+                vm_nets_length=vm_nets_length
+                + len(",".join(net_string_list))
+                - len(",".join(display_net_string_list)),
                 vm_ram_length=vm_ram_length,
                 vm_vcpu_length=vm_vcpu_length,
                 vm_node_length=vm_node_length,
