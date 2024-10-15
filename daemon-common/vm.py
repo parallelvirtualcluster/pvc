@@ -3269,7 +3269,7 @@ def vm_worker_send_snapshot(
         )
         return False
 
-    expected_destination_pvc_version = "0.9.100"  # TODO: 0.9.101 when completed
+    expected_destination_pvc_version = "0.9.101"
     # Work around development versions
     current_destination_pvc_version = re.sub(
         r"~git-.*", "", current_destination_pvc_version
@@ -3813,7 +3813,7 @@ def vm_worker_create_mirror(
         )
         return False
 
-    expected_destination_pvc_version = "0.9.100"  # TODO: 0.9.101 when completed
+    expected_destination_pvc_version = "0.9.101"
     # Work around development versions
     current_destination_pvc_version = re.sub(
         r"~git-.*", "", current_destination_pvc_version
@@ -4409,7 +4409,7 @@ def vm_worker_promote_mirror(
         )
         return False
 
-    expected_destination_pvc_version = "0.9.100"  # TODO: 0.9.101 when completed
+    expected_destination_pvc_version = "0.9.101"
     # Work around development versions
     current_destination_pvc_version = re.sub(
         r"~git-.*", "", current_destination_pvc_version
