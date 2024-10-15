@@ -188,3 +188,6 @@ def setup_node(logger, config, zkhandler):
                 (("node.count.networks", config["node_hostname"]), "0"),
             ]
         )
+
+        logger.out("Waiting 3 seconds for Zookeeper to synchronize", state="s")
+        time.sleep(3)
