@@ -189,5 +189,5 @@ def setup_node(logger, config, zkhandler):
             ]
         )
 
-        logger.out("Waiting 3 seconds for Zookeeper to synchronize", state="s")
-        time.sleep(3)
+    logger.out("Waiting 3 seconds for Zookeeper to synchronize", state="s")
+    time.sleep(3)
