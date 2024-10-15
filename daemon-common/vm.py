@@ -1997,11 +1997,14 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
         )
 
         if lock_remove_retcode != 0:
-            fail(
-                celery,
-                f"Failed to free RBD lock {lock['id']} on volume {rbd}: {lock_remove_stderr}",
-            )
-            return False
+            if force_unlock and "No such file or directory" in lock_remove_stderr:
+                continue
+            else:
+                fail(
+                    celery,
+                    f"Failed to free RBD lock {lock['id']} on volume {rbd}: {lock_remove_stderr}",
+                )
+                return False
 
     current_stage += 1
     return finish(

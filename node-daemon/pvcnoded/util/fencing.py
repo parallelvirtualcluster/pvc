@@ -247,7 +247,7 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
             )
             zkhandler.write(
                 {
-                    (("domain.state", dom_uuid), "stopped"),
+                    (("domain.state", dom_uuid), "stop"),
                     (("domain.meta.autostart", dom_uuid), "True"),
                 }
             )
