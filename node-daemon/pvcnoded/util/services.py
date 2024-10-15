@@ -102,5 +102,5 @@ def start_system_services(logger, config):
     start_workerd(logger, config)
     start_healthd(logger, config)
 
-    logger.out("Waiting 5 seconds for daemons to start", state="s")
-    sleep(5)
+    logger.out("Waiting 10 seconds for daemons to start", state="s")
+    sleep(10)
