@@ -1,3 +1,29 @@
+pvc (0.9.101-0) unstable; urgency=high
+
+  **New Feature**: Adds VM snapshot sending (`vm snapshot send`), VM mirroring (`vm mirror create`), and (offline) mirror promotion (`vm mirror promote`). Permits transferring VM snapshots to remote clusters, individually or repeatedly, and promoting them to active status, for disaster recovery and migration between clusters.
+  **Breaking Change**: Migrates the API daemon into Gunicorn when in production mode. Permits more scalable and performant operation of the API. **Requires additional dependency packages on all coordinator nodes** (`gunicorn`, `python3-gunicorn`, `python3-setuptools`); upgrade via `pvc-ansible` is strongly recommended.
+  **Enhancement**: Provides whole cluster utilization stats in the cluster status data. Permits better observability into the overall resource utilization of the cluster.
+  **Enhancement**: Adds a new storage benchmark format (v2) which includes additional resource utilization statistics. This allows for better evaluation of storage performance impact on the cluster as a whole. The updated format also permits arbitrary benchmark job names for easier parsing and tracking.
+
+  * [API Daemon] Allows scanning of new volumes added manually via other commands
+  * [API Daemon/CLI Client] Adds whole cluster utilization statistics to cluster status
+  * [API Daemon] Moves production API execution into Gunicorn
+  * [API Daemon] Adds a new storage benchmark format (v2) with additional resource tracking
+  * [API Daemon] Adds support for named storage benchmark jobs
+  * [API Daemon] Fixes a bug in OSD creation which would create `split` OSDs if `--osd-count` was set to 1
+  * [API Daemon] Adds support for the `mirror` VM state used by snapshot mirrors
+  * [CLI Client] Fixes several output display bugs in various commands and in Worker task outputs
+  * [CLI Client] Improves and shrinks the status progress bar output to support longer messages
+  * [API Daemon] Adds support for sending snapshots to remote clusters
+  * [API Daemon] Adds support for updating and promoting snapshot mirrors to remote clusters
+  * [Node Daemon] Improves timeouts during primary/secondary coordinator transitions to avoid deadlocks
+  * [Node Daemon] Improves timeouts during keepalive updates to avoid deadlocks
+  * [Node Daemon] Refactors fencing thread structure to ensure a single fencing task per cluster and sequential node fences to avoid potential anomalies (e.g. fencing 2 nodes simultaneously)
+  * [Node Daemon] Fixes a bug in fencing if VM locks were already freed, leaving VMs in an invalid state
+  * [Node Daemon] Increases the wait time during system startup to ensure Zookeeper has more time to synchronize
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 15 Oct 2024 11:39:11 -0400
+
 pvc (0.9.100-0) unstable; urgency=high
 
   * [API Daemon] Improves the handling of "detect:" disk strings on newer systems by leveraging the "nvme" command
