@@ -375,8 +375,11 @@ def get_parsed_configuration(config_file):
         config = {**config, **config_api_ssl}
 
         # Use coordinators as storage hosts if not explicitly specified
+        # These are added as FQDNs in the storage domain
         if not config["storage_hosts"] or len(config["storage_hosts"]) < 1:
-            config["storage_hosts"] = config["coordinators"]
+            config["storage_hosts"] = []
+            for host in config["coordinators"]:
+                config["storage_hosts"].append(f"{host}.{config['storage_domain']}")
 
         # Set up our token list if specified
         if config["api_auth_source"] == "token":

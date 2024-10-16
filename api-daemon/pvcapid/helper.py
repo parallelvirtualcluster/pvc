@@ -1438,15 +1438,7 @@ def vm_snapshot_receive_block_createsnap(zkhandler, pool, volume, snapshot):
 @ZKConnection(config)
 def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=None):
     """
-    Receive a VM configuration from a remote system
-
-    This function requires some explanation.
-
-    We get a full JSON dump of the VM configuration as provided by `pvc vm info`. This contains all the information we
-    reasonably need to replicate the VM at the given snapshot, including metainformation.
-
-    First, we need to determine if this is an incremental or full send. If it's full, and the VM already exists,
-    this is an issue and we have to error. But this should have already happened with the RBD volumes.
+    Receive a VM configuration snapshot from a remote system, and modify it to work on our system
     """
 
     def parse_unified_diff(diff_text, original_text):
@@ -1503,13 +1495,28 @@ def vm_snapshot_receive_config(zkhandler, snapshot, vm_config, source_snapshot=N
     vm_xml = vm_config["xml"]
     vm_xml_diff = "\n".join(current_snapshot["xml_diff_lines"])
     snapshot_vm_xml = parse_unified_diff(vm_xml_diff, vm_xml)
+    xml_data = etree.fromstring(snapshot_vm_xml)
 
     # Replace the Ceph storage secret UUID with this cluster's
     our_ceph_secret_uuid = config["ceph_secret_uuid"]
-    xml_data = etree.fromstring(snapshot_vm_xml)
     ceph_secrets = xml_data.xpath("//secret[@type='ceph']")
     for ceph_secret in ceph_secrets:
         ceph_secret.set("uuid", our_ceph_secret_uuid)
+
+    # Replace the Ceph source hosts with this cluster's
+    our_ceph_storage_hosts = config["storage_hosts"]
+    our_ceph_storage_port = str(config["ceph_monitor_port"])
+    ceph_sources = xml_data.xpath("//source[@protocol='rbd']")
+    for ceph_source in ceph_sources:
+        for host in ceph_source.xpath("host"):
+            ceph_source.remove(host)
+        for ceph_storage_host in our_ceph_storage_hosts:
+            new_host = etree.Element("host")
+            new_host.set("name", ceph_storage_host)
+            new_host.set("port", our_ceph_storage_port)
+            ceph_source.append(new_host)
+
+    # Regenerate the VM XML
     snapshot_vm_xml = etree.tostring(xml_data, pretty_print=True).decode("utf8")
 
     if (
