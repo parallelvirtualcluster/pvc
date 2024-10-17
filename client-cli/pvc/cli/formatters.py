@@ -905,7 +905,7 @@ def cli_connection_list_format_pretty(CLI_CONFIG, data):
     # Parse each connection and adjust field lengths
     for connection in data:
         for field, length in [(f, fields[f]["length"]) for f in fields]:
-            _length = len(str(connection[field]))
+            _length = len(str(connection[field])) + 1
             if _length > length:
                 length = len(str(connection[field])) + 1
 
@@ -1005,7 +1005,7 @@ def cli_connection_detail_format_pretty(CLI_CONFIG, data):
     # Parse each connection and adjust field lengths
     for connection in data:
         for field, length in [(f, fields[f]["length"]) for f in fields]:
-            _length = len(str(connection[field]))
+            _length = len(str(connection[field])) + 1
             if _length > length:
                 length = len(str(connection[field])) + 1
 

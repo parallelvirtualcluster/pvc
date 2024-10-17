@@ -167,9 +167,17 @@ def get_store(store_path):
     with open(store_file) as fh:
         try:
             store_data = jload(fh)
-            return store_data
         except Exception:
-            return dict()
+            store_data = dict()
+
+    if path.exists(DEFAULT_STORE_DATA["cfgfile"]):
+        if store_data.get("local", None) != DEFAULT_STORE_DATA:
+            del store_data["local"]
+        if "local" not in store_data.keys():
+            store_data["local"] = DEFAULT_STORE_DATA
+            update_store(store_path, store_data)
+
+    return store_data
 
 
 def update_store(store_path, store_data):

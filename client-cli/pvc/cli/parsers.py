@@ -68,7 +68,8 @@ def cli_connection_list_parser(connections_config, show_keys_flag):
                 }
             )
 
-    return connections_data
+    # Return, ensuring local is always first
+    return sorted(connections_data, key=lambda x: (x.get("name") != "local"))
 
 
 def cli_connection_detail_parser(connections_config):
