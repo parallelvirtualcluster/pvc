@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.102](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.102)
+
+  * [API Daemon] Ensures that received config snapshots update storage hosts in addition to secret UUIDs
+  * [CLI Client] Fixes several bugs around local connection handling and connection listings
+
 ###### [v0.9.101](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.101)
 
   **New Feature**: Adds VM snapshot sending (`vm snapshot send`), VM mirroring (`vm mirror create`), and (offline) mirror promotion (`vm mirror promote`). Permits transferring VM snapshots to remote clusters, individually or repeatedly, and promoting them to active status, for disaster recovery and migration between clusters.
