@@ -354,7 +354,7 @@ class API_Initialize(Resource):
         parameters:
           - in: query
             name: overwrite
-            type: bool
+            type: boolean
             required: false
             description: A flag to enable or disable (default) overwriting existing data
           - in: query
@@ -521,19 +521,19 @@ class API_Status(Resource):
                 maintenance:
                   type: string
                   description: Whether the cluster is in maintenance mode or not (string boolean)
-                  example: true
+                  example: "true"
                 primary_node:
                   type: string
                   description: The current primary coordinator node
-                  example: pvchv1
+                  example: "pvchv1"
                 pvc_version:
                   type: string
                   description: The PVC version of the current primary coordinator node
-                  example: 0.9.61
+                  example: "0.9.61"
                 upstream_ip:
                   type: string
                   description: The cluster upstream IP address in CIDR format
-                  example: 10.0.0.254/24
+                  example: "10.0.0.254/24"
                 nodes:
                   type: object
                   properties:
@@ -598,7 +598,7 @@ class API_Status(Resource):
                           type: integer
                           description: The total amount of RAM provisioned to all domains (regardless of state) in MB
                         utilization:
-                          type: float
+                          type: number
                           description: The memory utilization percentage (average) of the cluster
                     vcpu:
                       type: object
@@ -607,7 +607,7 @@ class API_Status(Resource):
                           type: integer
                           description: The total number of real CPU cores (all nodes)
                         load:
-                          type: float
+                          type: number
                           description: The current 5-minute CPU load (all nodes summed)
                         allocated:
                           type: integer
@@ -616,7 +616,7 @@ class API_Status(Resource):
                           type: integer
                           description: The total number of vCPUs provisioned to all domains (regardless of state)
                         utilization:
-                          type: float
+                          type: number
                           description: The CPU utilization percentage (average) of the cluster
                     disk:
                       type: object
@@ -631,7 +631,7 @@ class API_Status(Resource):
                           type: integer
                           description: The total free size of all OSDs in KB
                         utilization:
-                          type: float
+                          type: number
                           description: The disk utilization percentage (average) of the cluster
           400:
             description: Bad request
@@ -944,15 +944,15 @@ class API_Faults(Resource):
                   description: The ID of the fault
                   example: "10ae144b78b4cc5fdf09e2ebbac51235"
                 first_reported:
-                  type: date
+                  type: string
                   description: The first time the fault was reported
                   example: "2023-12-01 16:47:59.849742"
                 last_reported:
-                  type: date
+                  type: string
                   description: The last time the fault was reported
                   example: "2023-12-01 17:39:45.188398"
                 acknowledged_at:
-                  type: date
+                  type: string
                   description: The time the fault was acknowledged, or empty if not acknowledged
                   example: "2023-12-01 17:50:00.000000"
                 status:
@@ -1041,6 +1041,12 @@ class API_Faults_Element(Resource):
         ---
         tags:
           - faults
+        parameters:
+          - in: path
+            name: fault_id
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1058,6 +1064,12 @@ class API_Faults_Element(Resource):
         ---
         tags:
           - faults
+        parameters:
+          - in: path
+            name: fault_id
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1077,6 +1089,12 @@ class API_Faults_Element(Resource):
         ---
         tags:
           - faults
+        parameters:
+          - in: path
+            name: fault_id
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1139,6 +1157,12 @@ class API_Tasks_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: task_id
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1240,7 +1264,7 @@ class API_Node_Root(Resource):
                   description: The number of available CPU cores
                 kernel:
                   type: string
-                  desription: The running kernel version from uname
+                  description: The running kernel version from uname
                 os:
                   type: string
                   description: The current operating system type
@@ -1266,7 +1290,7 @@ class API_Node_Root(Resource):
                       name:
                         type: string
                         description: The name of the health plugin
-                        example: nics
+                        example: "nics"
                       last_run:
                         type: integer
                         description: The UNIX timestamp (s) of the last plugin run
@@ -1368,6 +1392,12 @@ class API_Node_Element(Resource):
         ---
         tags:
           - node
+        parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1394,6 +1424,12 @@ class API_Node_DaemonState(Resource):
         ---
         tags:
           - node
+        parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1428,6 +1464,12 @@ class API_Node_CoordinatorState(Resource):
         ---
         tags:
           - node
+        parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1467,6 +1509,11 @@ class API_Node_CoordinatorState(Resource):
         tags:
           - node
         parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: action
             type: string
@@ -1506,6 +1553,12 @@ class API_Node_DomainState(Resource):
         ---
         tags:
           - node
+        parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -1546,6 +1599,11 @@ class API_Node_DomainState(Resource):
         tags:
           - node
         parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: action
             type: string
@@ -1595,6 +1653,11 @@ class API_Node_Log(Resource):
         tags:
           - node
         parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: lines
             type: integer
@@ -1696,7 +1759,6 @@ class API_VM_Root(Resource):
                   description: The tag(s) of the VM
                   items:
                     type: object
-                    id: VMTag
                     properties:
                       name:
                         type: string
@@ -1712,14 +1774,13 @@ class API_VM_Root(Resource):
                   description: The snapshot(s) of the VM
                   items:
                     type: object
-                    id: VMSnapshot
                     properties:
                       name:
                         type: string
                         description: The name of the snapshot
                       timestamp:
                         type: string
-                        descrpition: Unix timestamp of the snapshot
+                        description: Unix timestamp of the snapshot
                       age:
                         type: string
                         description: Human-readable age of the snapshot in the largest viable unit (seconds, minutes, hours, days)
@@ -1804,7 +1865,7 @@ class API_VM_Root(Resource):
                   description: The QEMU machine type of the VM
                 console:
                   type: string
-                  descritpion: The serial console type of the VM
+                  description: The serial console type of the VM
                 vnc:
                   type: object
                   properties:
@@ -2010,7 +2071,6 @@ class API_VM_Root(Resource):
             type: string
             required: false
             description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
-            default: none
             enum:
               - mem
               - memprov
@@ -2028,7 +2088,6 @@ class API_VM_Root(Resource):
             type: string
             required: false
             description: The preferred migration method (live, shutdown, none)
-            default: none
             enum:
               - live
               - shutdown
@@ -2097,6 +2156,12 @@ class API_VM_Element(Resource):
         ---
         tags:
           - vm
+        parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -2152,6 +2217,11 @@ class API_VM_Element(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: xml
             type: string
@@ -2172,7 +2242,6 @@ class API_VM_Element(Resource):
             type: string
             required: false
             description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
-            default: none
             enum:
               - mem
               - memprov
@@ -2190,7 +2259,6 @@ class API_VM_Element(Resource):
             type: string
             required: false
             description: The preferred migration method (live, shutdown, none)
-            default: none
             enum:
               - live
               - shutdown
@@ -2264,6 +2332,11 @@ class API_VM_Element(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: xml
             type: string
@@ -2304,6 +2377,11 @@ class API_VM_Element(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: delete_disks
             type: boolean
@@ -2344,6 +2422,12 @@ class API_VM_Metadata(Resource):
         ---
         tags:
           - vm
+        parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -2408,6 +2492,11 @@ class API_VM_Metadata(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: limit
             type: string
@@ -2440,7 +2529,6 @@ class API_VM_Metadata(Resource):
             type: string
             required: false
             description: The preferred migration method (live, shutdown, none)
-            default: none
             enum:
               - live
               - shutdown
@@ -2450,7 +2538,6 @@ class API_VM_Metadata(Resource):
             type: integer
             required: false
             description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
-            default: none
         responses:
           200:
             description: OK
@@ -2491,12 +2578,17 @@ class API_VM_Tags(Resource):
         ---
         tags:
           - vm
+        parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
             schema:
               type: object
-              id: VMTags
               properties:
                 name:
                   type: string
@@ -2506,7 +2598,16 @@ class API_VM_Tags(Resource):
                   description: The tag(s) of the VM
                   items:
                     type: object
-                    id: VMTag
+                    properties:
+                      name:
+                        type: string
+                        description: The name of the tag
+                      type:
+                        type: string
+                        description: The type of the tag (user, system)
+                      protected:
+                        type: boolean
+                        description: Whether the tag is protected or not
           404:
             description: VM not found
             schema:
@@ -2534,6 +2635,11 @@ class API_VM_Tags(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: action
             type: string
@@ -2590,6 +2696,12 @@ class API_VM_State(Resource):
         ---
         tags:
           - vm
+        parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -2631,6 +2743,11 @@ class API_VM_State(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: state
             type: string
@@ -2691,6 +2808,12 @@ class API_VM_Node(Resource):
         ---
         tags:
           - vm
+        parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -2737,6 +2860,11 @@ class API_VM_Node(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: action
             type: string
@@ -2801,6 +2929,12 @@ class API_VM_Locks(Resource):
         ---
         tags:
           - vm
+        parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
         responses:
           202:
             description: Accepted
@@ -2849,6 +2983,11 @@ class API_VM_Console(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: lines
             type: integer
@@ -2890,6 +3029,11 @@ class API_VM_Rename(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: new_name
             type: string
@@ -2932,6 +3076,11 @@ class API_VM_Device(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: xml
             type: string
@@ -2987,6 +3136,11 @@ class API_VM_Device(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: xml
             type: string
@@ -3056,6 +3210,11 @@ class API_VM_Backup(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: backup_path
             type: string
@@ -3118,6 +3277,11 @@ class API_VM_Backup(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: backup_path
             type: string
@@ -3181,6 +3345,11 @@ class API_VM_Restore(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: backup_path
             type: string
@@ -3244,6 +3413,11 @@ class API_VM_Snapshot(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: snapshot_name
             type: string
@@ -3303,6 +3477,11 @@ class API_VM_Snapshot(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: snapshot_name
             type: string
@@ -3368,6 +3547,11 @@ class API_VM_Snapshot_Rollback(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: snapshot_name
             type: string
@@ -3443,6 +3627,11 @@ class API_VM_Snapshot_Export(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: snapshot_name
             type: string
@@ -3450,7 +3639,7 @@ class API_VM_Snapshot_Export(Resource):
             description: The name of the snapshot to export (must exist)
           - in: query
             name: export_path
-            type: string (path)
+            type: string
             required: true
             description: The absolute file path to export the snapshot to on the active primary coordinator
           - in: query
@@ -3532,6 +3721,11 @@ class API_VM_Snapshot_Import(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: snapshot_name
             type: string
@@ -3539,7 +3733,7 @@ class API_VM_Snapshot_Import(Resource):
             description: The name of the snapshot to roll back to
           - in: query
             name: import_path
-            type: string (path)
+            type: string
             required: true
             description: The absolute file path to import the snapshot from on the active primary coordinator
           - in: query
@@ -3634,6 +3828,11 @@ class API_VM_Snapshot_Send(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: snapshot_name
             type: string
@@ -3751,6 +3950,11 @@ class API_VM_Snapshot_Receive_Block(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pool
             type: string
@@ -3826,6 +4030,11 @@ class API_VM_Snapshot_Receive_Block(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pool
             type: string
@@ -3897,6 +4106,11 @@ class API_VM_Snapshot_Receive_Block(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pool
             type: string
@@ -3963,6 +4177,11 @@ class API_VM_Snapshot_Receive_Config(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pool
             type: string
@@ -4049,6 +4268,11 @@ class API_VM_Mirror_Create(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: destination_api_uri
             type: string
@@ -4160,6 +4384,11 @@ class API_VM_Mirror_Promote(Resource):
         tags:
           - vm
         parameters:
+          - in: path
+            name: vm
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: destination_api_uri
             type: string
@@ -4184,6 +4413,7 @@ class API_VM_Mirror_Promote(Resource):
             description: The remote cluster storage pool to create RBD volumes in, if different from the source storage pool
           - in: query
             name: remove_on_source
+            type: boolean
             required: false
             default: false
             description: Remove the VM on the source cluster once promoted (performs a full move between clusters)
@@ -4255,17 +4485,16 @@ class API_VM_Autobackup_Root(Resource):
           - provisioner
         parameters:
           - in: query
+            name: email_recipients
+            type: string
+            required: false
+            description: A list of email addresses to send failure and report emails to, comma-separated
+          - in: query
             name: force_full
             type: boolean
             required: false
+            default: false
             description: If set and true, triggers a full autobackup regardless of schedule
-          - in: query
-            name: email_recipients
-            type: array
-            description: A list of email addresses to send failure and report emails to
-            items:
-              type: string
-              example: "user@domain.tld"
         responses:
           202:
             description: Accepted
@@ -4528,6 +4757,12 @@ class API_Network_Element(Resource):
         ---
         tags:
           - network
+        parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -4570,6 +4805,11 @@ class API_Network_Element(Resource):
         tags:
           - network
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: description
             type: string
@@ -4679,6 +4919,11 @@ class API_Network_Element(Resource):
         tags:
           - network
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: description
             type: string
@@ -4766,6 +5011,12 @@ class API_Network_Element(Resource):
         ---
         tags:
           - network
+        parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -4817,6 +5068,11 @@ class API_Network_Lease_Root(Resource):
                   type: integer
                   description: The UNIX timestamp of the lease creation
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: limit
             type: string
@@ -4867,6 +5123,11 @@ class API_Network_Lease_Root(Resource):
         tags:
           - network
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: macaddress
             type: string
@@ -4936,6 +5197,17 @@ class API_Network_Lease_Element(Resource):
                 timestamp:
                   type: integer
                   description: The UNIX timestamp of the lease creation
+        parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: mac
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -4965,6 +5237,16 @@ class API_Network_Lease_Element(Resource):
         tags:
           - network
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: mac
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: macaddress
             type: string
@@ -5008,6 +5290,17 @@ class API_Network_Lease_Element(Resource):
         ---
         tags:
           - network
+        parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: mac
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -5063,6 +5356,11 @@ class API_Network_ACL_Root(Resource):
                   type: string
                   description: The NFT-format rule string
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: limit
             type: string
@@ -5119,6 +5417,11 @@ class API_Network_ACL_Root(Resource):
         tags:
           - network
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: description
             type: string
@@ -5174,6 +5477,17 @@ class API_Network_ACL_Element(Resource):
         ---
         tags:
           - network
+        parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: description
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -5211,6 +5525,16 @@ class API_Network_ACL_Element(Resource):
         tags:
           - network
         parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: description
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: direction
             type: string
@@ -5255,6 +5579,17 @@ class API_Network_ACL_Element(Resource):
         ---
         tags:
           - network
+        parameters:
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: description
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -5320,7 +5655,7 @@ class API_SRIOV_PF_Root(Resource):
                   type: string
                   description: The MTU of the SR-IOV PF device
                 vfs:
-                  type: list
+                  type: array
                   items:
                     type: string
                     description: The PHY name of a VF of this PF
@@ -5340,6 +5675,12 @@ class API_SRIOV_PF_Node(Resource):
         ---
         tags:
           - network / sriov
+        parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -5396,7 +5737,6 @@ class API_SRIOV_VF_Root(Resource):
                   description: The current MAC address of the VF device
                 config:
                   type: object
-                  id: sriov_vf_config
                   properties:
                     vlan_id:
                       type: string
@@ -5424,7 +5764,6 @@ class API_SRIOV_VF_Root(Resource):
                       description: Whether VF RSS querying is enabled or disabled
                 usage:
                   type: object
-                  id: sriov_vf_usage
                   properties:
                     used:
                       type: boolean
@@ -5457,6 +5796,12 @@ class API_SRIOV_VF_Node(Resource):
         ---
         tags:
           - network / sriov
+        parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -5478,6 +5823,17 @@ class API_SRIOV_VF_Element(Resource):
         ---
         tags:
           - network / sriov
+        parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: vf
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -5524,6 +5880,16 @@ class API_SRIOV_VF_Element(Resource):
         tags:
           - network / sriov
         parameters:
+          - in: path
+            name: node
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: vf
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: vlan_id
             type: integer
@@ -5712,7 +6078,7 @@ class API_Storage_Ceph_Benchmark(Resource):
               id: storagebenchmark
               properties:
                 id:
-                  type: string (containing integer)
+                  type: string
                   description: The database ID of the test result
                 job:
                   type: string
@@ -5943,7 +6309,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
               id: osd
               properties:
                 id:
-                  type: string (containing integer)
+                  type: string
                   description: The Ceph ID of the OSD
                 device:
                   type: string
@@ -5958,11 +6324,11 @@ class API_Storage_Ceph_OSD_Root(Resource):
                       type: string
                       description: The Ceph OSD UUID
                     up:
-                      type: boolean integer
-                      description: Whether OSD is in "up" state
+                      type: integer
+                      description: Whether OSD is in "up" state, as boolean integer
                     in:
-                      type: boolean integer
-                      description: Whether OSD is in "in" state
+                      type: integer
+                      description: Whether OSD is in "in" state, as boolean integer
                     primary_affinity:
                       type: integer
                       description: The Ceph primary affinity of the OSD
@@ -6081,12 +6447,12 @@ class API_Storage_Ceph_OSD_Root(Resource):
             description: The Ceph CRUSH weight for the OSD
           - in: query
             name: ext_db_ratio
-            type: float
+            type: number
             required: false
             description: If set, creates an OSD DB LV with this decimal ratio of DB to total OSD size (usually 0.05 i.e. 5%); mutually exclusive with ext_db_size
           - in: query
             name: ext_db_size
-            type: float
+            type: number
             required: false
             description: If set, creates an OSD DB LV with this explicit size in human units (e.g. 1024M, 20G); mutually exclusive with ext_db_ratio
           - in: query
@@ -6138,6 +6504,12 @@ class API_Storage_Ceph_OSD_Element(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: path
+            name: osdid
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -6185,6 +6557,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: osdid
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: new_device
             type: string
@@ -6202,12 +6579,12 @@ class API_Storage_Ceph_OSD_Element(Resource):
             description: The Ceph CRUSH weight for the replacement OSD
           - in: query
             name: ext_db_ratio
-            type: float
+            type: number
             required: false
             description: If set, creates an OSD DB LV for the replcement OSD with this decimal ratio of DB to total OSD size (usually 0.05 i.e. 5%); if unset, use existing ext_db_size
           - in: query
             name: ext_db_size
-            type: float
+            type: number
             required: false
             description: If set, creates an OSD DB LV for the replacement OSD with this explicit size in human units (e.g. 1024M, 20G); if unset, use existing ext_db_size
         responses:
@@ -6264,6 +6641,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: osdid
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: device
             type: string
@@ -6326,6 +6708,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: osdid
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: force
             type: boolean
@@ -6386,6 +6773,12 @@ class API_Storage_Ceph_OSD_State(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: path
+            name: osdid
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -6416,6 +6809,11 @@ class API_Storage_Ceph_OSD_State(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: osdid
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: state
             type: string
@@ -6579,6 +6977,7 @@ class API_Storage_Ceph_Pool_Root(Resource):
             description: The replication configuration (e.g. "copies=3,mincopies=2") for the pool
           - in: query
             name: tier
+            type: string
             required: false
             description: The device tier for the pool (hdd, ssd, nvme, or default)
         responses:
@@ -6613,6 +7012,12 @@ class API_Storage_Ceph_Pool_Element(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -6654,6 +7059,11 @@ class API_Storage_Ceph_Pool_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pgs
             type: integer
@@ -6666,6 +7076,7 @@ class API_Storage_Ceph_Pool_Element(Resource):
             description: The replication configuration (e.g. "copies=3,mincopies=2") for the pool
           - in: query
             name: tier
+            type: string
             required: false
             description: The device tier for the pool (hdd, ssd, nvme, or default)
         responses:
@@ -6709,6 +7120,11 @@ class API_Storage_Ceph_Pool_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pgs
             type: integer
@@ -6754,6 +7170,11 @@ class API_Storage_Ceph_Pool_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: yes-i-really-mean-it
             type: string
@@ -6964,6 +7385,17 @@ class API_Storage_Ceph_Volume_Element(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -6998,6 +7430,16 @@ class API_Storage_Ceph_Volume_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: size
             type: string
@@ -7045,6 +7487,16 @@ class API_Storage_Ceph_Volume_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: new_size
             type: string
@@ -7097,6 +7549,17 @@ class API_Storage_Ceph_Volume_Element(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -7127,6 +7590,16 @@ class API_Storage_Ceph_Volume_Element_Scan(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -7175,6 +7648,16 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: new_volume
             type: string
@@ -7240,6 +7723,16 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: image_format
             type: string
@@ -7421,6 +7914,22 @@ class API_Storage_Ceph_Snapshot_Element(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: snapshot
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -7444,21 +7953,21 @@ class API_Storage_Ceph_Snapshot_Element(Resource):
         tags:
           - storage / ceph
         parameters:
-          - in: query
-            name: snapshot
+          - in: path
+            name: pool
             type: string
             required: true
-            description: The name of the snapshot
-          - in: query
+            description: Path parameter
+          - in: path
             name: volume
             type: string
             required: true
-            description: The name of the volume
-          - in: query
-            name: pool
-            type: integer
+            description: Path parameter
+          - in: path
+            name: snapshot
+            type: string
             required: true
-            description: The name of the pool
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -7495,6 +8004,21 @@ class API_Storage_Ceph_Snapshot_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: snapshot
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: new_name
             type: string
@@ -7529,6 +8053,22 @@ class API_Storage_Ceph_Snapshot_Element(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: path
+            name: pool
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: volume
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: snapshot
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -7562,21 +8102,21 @@ class API_Storage_Ceph_Snapshot_Rollback_Element(Resource):
         tags:
           - storage / ceph
         parameters:
-          - in: query
-            name: snapshot
+          - in: path
+            name: pool
             type: string
             required: true
-            description: The name of the snapshot
-          - in: query
+            description: Path parameter
+          - in: path
             name: volume
             type: string
             required: true
-            description: The name of the volume
-          - in: query
-            name: pool
-            type: integer
+            description: Path parameter
+          - in: path
+            name: snapshot
+            type: string
             required: true
-            description: The name of the pool
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -7727,7 +8267,7 @@ class API_Provisioner_Template_System_Root(Resource):
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/system-template'
         """
@@ -7893,6 +8433,12 @@ class API_Provisioner_Template_System_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -7944,6 +8490,11 @@ class API_Provisioner_Template_System_Element(Resource):
         tags:
           - provisioner / template
         parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: vcpus
             type: integer
@@ -8069,6 +8620,11 @@ class API_Provisioner_Template_System_Element(Resource):
         tags:
           - provisioner / template
         parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: vcpus
             type: integer
@@ -8142,6 +8698,12 @@ class API_Provisioner_Template_System_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8213,7 +8775,7 @@ class API_Provisioner_Template_Network_Root(Resource):
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/network-template'
         """
@@ -8276,6 +8838,12 @@ class API_Provisioner_Template_Network_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8298,6 +8866,11 @@ class API_Provisioner_Template_Network_Element(Resource):
         tags:
           - provisioner / template
         parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: mac_template
             type: string
@@ -8326,6 +8899,12 @@ class API_Provisioner_Template_Network_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8355,11 +8934,17 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/network-template-net'
           404:
@@ -8395,6 +8980,11 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
         tags:
           - provisioner / template
         parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: vni
             type: integer
@@ -8437,6 +9027,17 @@ class API_Provisioner_Template_Network_Net_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8472,6 +9073,16 @@ class API_Provisioner_Template_Network_Net_Element(Resource):
         tags:
           - provisioner / template
         parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: permit_duplicate
             type: boolean
@@ -8500,6 +9111,17 @@ class API_Provisioner_Template_Network_Net_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: vni
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8586,7 +9208,7 @@ class API_Provisioner_Template_Storage_Root(Resource):
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/storage-template'
         """
@@ -8641,6 +9263,12 @@ class API_Provisioner_Template_Storage_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8661,6 +9289,12 @@ class API_Provisioner_Template_Storage_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8682,6 +9316,12 @@ class API_Provisioner_Template_Storage_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8712,11 +9352,17 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/storage-template-disk'
           404:
@@ -8758,6 +9404,11 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
         tags:
           - provisioner / template
         parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: disk_id
             type: string
@@ -8832,6 +9483,17 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: disk_id
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8874,6 +9536,16 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
         tags:
           - provisioner / template
         parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: disk_id
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pool
             type: string
@@ -8934,6 +9606,17 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: path
+            name: template
+            type: string
+            required: true
+            description: Path parameter
+          - in: path
+            name: disk_id
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -8989,7 +9672,7 @@ class API_Provisioner_Userdata_Root(Resource):
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/userdata'
         """
@@ -9052,6 +9735,12 @@ class API_Provisioner_Userdata_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: userdata
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -9082,6 +9771,11 @@ class API_Provisioner_Userdata_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: path
+            name: userdata
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: data
             type: string
@@ -9118,6 +9812,11 @@ class API_Provisioner_Userdata_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: path
+            name: userdata
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: data
             type: string
@@ -9144,6 +9843,12 @@ class API_Provisioner_Userdata_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: userdata
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -9196,7 +9901,7 @@ class API_Provisioner_Script_Root(Resource):
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/script'
         """
@@ -9263,6 +9968,12 @@ class API_Provisioner_Script_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: script
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -9293,6 +10004,11 @@ class API_Provisioner_Script_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: path
+            name: script
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: data
             type: string
@@ -9329,6 +10045,11 @@ class API_Provisioner_Script_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: path
+            name: script
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: data
             type: string
@@ -9355,6 +10076,12 @@ class API_Provisioner_Script_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: script
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -9395,10 +10122,9 @@ class API_Provisioner_OVA_Root(Resource):
                   type: string
                   description: OVA name
                 volumes:
-                  type: list
+                  type: array
                   items:
                     type: object
-                    id: ova_volume
                     properties:
                       disk_id:
                         type: string
@@ -9425,7 +10151,7 @@ class API_Provisioner_OVA_Root(Resource):
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/ova'
         """
@@ -9509,6 +10235,12 @@ class API_Provisioner_OVA_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: ova
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -9548,6 +10280,11 @@ class API_Provisioner_OVA_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: path
+            name: ova
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: pool
             type: string
@@ -9583,6 +10320,12 @@ class API_Provisioner_OVA_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: ova
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -9652,7 +10395,7 @@ class API_Provisioner_Profile_Root(Resource):
           200:
             description: OK
             schema:
-              type: list
+              type: array
               items:
                 $ref: '#/definitions/profile'
         """
@@ -9779,6 +10522,12 @@ class API_Provisioner_Profile_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: profile
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
@@ -9824,6 +10573,11 @@ class API_Provisioner_Profile_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: path
+            name: profile
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: profile_type
             type: string
@@ -9908,6 +10662,11 @@ class API_Provisioner_Profile_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: path
+            name: profile
+            type: string
+            required: true
+            description: Path parameter
           - in: query
             name: script
             type: string
@@ -9968,6 +10727,12 @@ class API_Provisioner_Profile_Element(Resource):
         ---
         tags:
           - provisioner
+        parameters:
+          - in: path
+            name: profile
+            type: string
+            required: true
+            description: Path parameter
         responses:
           200:
             description: OK
