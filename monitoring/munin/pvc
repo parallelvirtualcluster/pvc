@@ -34,7 +34,7 @@ warning=0.99
 critical=1.99
 
 export PVC_CLIENT_DIR="/run/shm/munin-pvc"
-PVC_CMD="/usr/bin/sudo /usr/bin/pvc --quiet cluster status --format json-pretty"
+PVC_CMD="/usr/bin/sudo -E /usr/bin/pvc --quiet cluster status --format json-pretty"
 JQ_CMD="/usr/bin/jq"
 
 output_usage() {
