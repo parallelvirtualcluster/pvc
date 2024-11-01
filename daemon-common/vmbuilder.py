@@ -336,11 +336,7 @@ def worker_create_vm(
     retcode, stdout, stderr = pvc_common.run_os_command("uname -m")
     vm_data["system_architecture"] = stdout.strip()
 
-    monitor_list = list()
-    monitor_names = config["storage_hosts"]
-    for monitor in monitor_names:
-        monitor_list.append("{}.{}".format(monitor, config["storage_domain"]))
-    vm_data["ceph_monitor_list"] = monitor_list
+    vm_data["ceph_monitor_list"] = config["storage_hosts"]
     vm_data["ceph_monitor_port"] = config["ceph_monitor_port"]
     vm_data["ceph_monitor_secret"] = config["ceph_secret_uuid"]
 
