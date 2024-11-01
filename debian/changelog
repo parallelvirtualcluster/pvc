@@ -1,3 +1,10 @@
+pvc (0.9.103-0) unstable; urgency=high
+
+  * [Provisioner] Fixes a bug with the change in `storage_hosts` to FQDNs affecting the VM Builder
+  * [Monitoring] Fixes the Munin plugin to work properly with sudo
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 01 Nov 2024 17:19:44 -0400
+
 pvc (0.9.102-0) unstable; urgency=high
 
   * [API Daemon] Ensures that received config snapshots update storage hosts in addition to secret UUIDs

@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.103](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.103)
+
+  * [Provisioner] Fixes a bug with the change in `storage_hosts` to FQDNs affecting the VM Builder
+  * [Monitoring] Fixes the Munin plugin to work properly with sudo
+
 ###### [v0.9.102](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.102)
 
   * [API Daemon] Ensures that received config snapshots update storage hosts in addition to secret UUIDs
