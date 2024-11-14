@@ -2492,7 +2492,7 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type, file_size=None):
         )
 
     if img_type == "raw":
-        if file_size != dev_size:
+        if file_size is not None and file_size != dev_size:
             output = {
                 "message": f"Image file size {file_size} does not match volume size {dev_size}"
             }
