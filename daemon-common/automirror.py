@@ -389,6 +389,7 @@ def worker_cluster_automirror(
             continue
 
         remote_marked_for_deletion = dict()
+        all_results = list()
         for destination in vm_destinations:
             mirror_start = datetime.now()
             result, ret = run_vm_mirror(
@@ -401,6 +402,7 @@ def worker_cluster_automirror(
             )
             mirror_end = datetime.now()
             runtime_secs = (mirror_end - mirror_start).seconds
+            all_results.append(result)
             if result:
                 remote_marked_for_deletion[destination] = ret
 
@@ -420,6 +422,15 @@ def worker_cluster_automirror(
                     "runtime_secs": runtime_secs,
                     "result_message": ret,
                 }
+
+        # If all sends failed, remove the snapshot we created as it will never be needed or automatically cleaned up later
+        if not any(all_results):
+            vm.vm_worker_remove_snapshot(
+                zkhandler,
+                None,
+                vm_detail["name"],
+                snapshot_name,
+            )
 
         # Find all local snapshots that were present in all remote snapshot deletions,
         # then remove them
