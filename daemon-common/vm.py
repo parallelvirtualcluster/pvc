@@ -3446,9 +3446,9 @@ def vm_worker_send_snapshot(
     new_tags = list()
     for tag in vm_detail["tags"]:
         tag_base = tag["name"].split(":")[0]
-        if tag_base in [t for t in autobackup_config["backup_tags"]] or tag_base in [
-            t for t in automirror_config["mirror_tags"]
-        ]:
+        if tag_base in [
+            t for t in autobackup_config.get("backup_tags", [])
+        ] or tag_base in [t for t in automirror_config.get("mirror_tags", [])]:
             continue
         new_tags.append(tag)
     vm_detail["tags"] = new_tags
