@@ -22,6 +22,7 @@
 
 import sys
 
+from inspect import stack
 from logging import getLogger
 from time import sleep
 
@@ -32,7 +33,8 @@ class TaskFailure(Exception):
 
 def start(celery, msg, current=0, total=1):
     logger = getLogger(__name__)
-    logger.info(f"Starting {current}/{total}: {msg}")
+    caller_name = stack()[1].function
+    logger.info(f"Start {caller_name} {current}/{total}: {msg}")
     if celery is None:
         return
     celery.update_state(
@@ -42,13 +44,14 @@ def start(celery, msg, current=0, total=1):
 
 
 def fail(celery, msg, exception=None, current=1, total=1):
+    caller_name = stack()[1].function
     if exception is None:
         exception = TaskFailure
 
     msg = f"{type(exception()).__name__}: {msg}"
 
     logger = getLogger(__name__)
-    logger.error(msg)
+    logger.error(f"Fail {caller_name} {current}/{total}: {msg}")
 
     sys.tracebacklimit = 0
     raise exception(msg)
@@ -56,22 +59,26 @@ def fail(celery, msg, exception=None, current=1, total=1):
 
 def log_info(celery, msg):
     logger = getLogger(__name__)
-    logger.info(f"Task log: {msg}")
+    caller_name = stack()[1].function
+    logger.info(f"Log {caller_name}: {msg}")
 
 
 def log_warn(celery, msg):
     logger = getLogger(__name__)
-    logger.warning(f"Task log: {msg}")
+    caller_name = stack()[1].function
+    logger.warning(f"Log {caller_name}: {msg}")
 
 
 def log_err(celery, msg):
     logger = getLogger(__name__)
-    logger.error(f"Task log: {msg}")
+    caller_name = stack()[1].function
+    logger.error(f"Log {caller_name}: {msg}")
 
 
 def update(celery, msg, current=1, total=2):
     logger = getLogger(__name__)
-    logger.info(f"Task update {current}/{total}: {msg}")
+    caller_name = stack()[1].function
+    logger.info(f"Update {caller_name} {current}/{total}: {msg}")
     if celery is None:
         return
     celery.update_state(
@@ -82,7 +89,8 @@ def update(celery, msg, current=1, total=2):
 
 def finish(celery, msg, current=2, total=2):
     logger = getLogger(__name__)
-    logger.info(f"Task update {current}/{total}: Finishing up")
+    caller_name = stack()[1].function
+    logger.info(f"Update {caller_name} {current}/{total}: Finishing up")
     if celery is None:
         return
     celery.update_state(
@@ -90,5 +98,5 @@ def finish(celery, msg, current=2, total=2):
         meta={"current": current, "total": total, "status": "Finishing up"},
     )
     sleep(1)
-    logger.info(f"Success {current}/{total}: {msg}")
+    logger.info(f"Success {caller_name} {current}/{total}: {msg}")
     return {"status": msg, "current": current, "total": total}
