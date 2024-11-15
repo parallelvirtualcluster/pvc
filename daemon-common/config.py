@@ -481,6 +481,64 @@ def get_autobackup_configuration():
     return config
 
 
+def get_parsed_automirror_configuration(config_file):
+    """
+    Load the configuration; this is the same main pvc.conf that the daemons read
+    """
+    print('Loading configuration from file "{}"'.format(config_file))
+
+    with open(config_file, "r") as cfgfh:
+        try:
+            o_config = yaml.load(cfgfh, Loader=yaml.SafeLoader)
+        except Exception as e:
+            print(f"ERROR: Failed to parse configuration file: {e}")
+            os._exit(1)
+
+    config = dict()
+
+    try:
+        o_cluster = o_config["cluster"]
+        config_cluster = {
+            "cluster": o_cluster["name"],
+            "automirror_enabled": True,
+        }
+        config = {**config, **config_cluster}
+
+        o_automirror = o_config["automirror"]
+        if o_automirror is None:
+            config["automirror_enabled"] = False
+            return config
+
+        config_automirror = {
+            "mirror_tags": o_automirror["mirror_tags"],
+            "mirror_destinations": o_automirror["destinations"],
+            "mirror_default_destination": o_automirror["default_destination"],
+            "mirror_keep_snapshots": o_automirror["keep_snapshots"],
+        }
+        config = {**config, **config_automirror}
+
+        if config["mirror_default_destination"] not in [
+            d for d in config["mirror_destinations"].keys()
+        ]:
+            raise Exception(
+                "Specified default mirror destination is not in the list of destinations"
+            )
+
+    except Exception as e:
+        raise MalformedConfigurationError(e)
+
+    return config
+
+
+def get_automirror_configuration():
+    """
+    Get the configuration.
+    """
+    pvc_config_file = get_configuration_path()
+    config = get_parsed_automirror_configuration(pvc_config_file)
+    return config
+
+
 def validate_directories(config):
     if not os.path.exists(config["dynamic_directory"]):
         os.makedirs(config["dynamic_directory"])

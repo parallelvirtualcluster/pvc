@@ -53,6 +53,9 @@ from daemon_lib.vmbuilder import (
 from daemon_lib.autobackup import (
     worker_cluster_autobackup,
 )
+from daemon_lib.automirror import (
+    worker_cluster_automirror,
+)
 
 # Daemon version
 version = "0.9.103"
@@ -119,6 +122,26 @@ def cluster_autobackup(self, force_full=False, email_recipients=None, run_on="pr
 
     return run_cluster_autobackup(
         self, force_full=force_full, email_recipients=email_recipients
+    )
+
+
+@celery.task(name="cluster.automirror", bind=True, routing_key="run_on")
+def cluster_automirror(
+    self, email_recipients=None, email_errors_only=False, run_on="primary"
+):
+    @ZKConnection(config)
+    def run_cluster_automirror(
+        zkhandler, self, email_recipients=None, email_errors_only=False
+    ):
+        return worker_cluster_automirror(
+            zkhandler,
+            self,
+            email_recipients=email_recipients,
+            email_errors_only=email_errors_only,
+        )
+
+    return run_cluster_automirror(
+        self, email_recipients=email_recipients, email_errors_only=email_errors_only
     )
 
 

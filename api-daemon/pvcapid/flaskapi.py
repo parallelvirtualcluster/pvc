@@ -4533,6 +4533,76 @@ class API_VM_Autobackup_Root(Resource):
 api.add_resource(API_VM_Autobackup_Root, "/vm/autobackup")
 
 
+# /vm/automirror
+class API_VM_Automirror_Root(Resource):
+    @RequestParser(
+        [
+            {"name": "email_recipients"},
+            {
+                "name": "email_errors_only",
+                "required": False,
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Trigger a cluster automirror job
+        ---
+        tags:
+          - provisioner
+        parameters:
+          - in: query
+            name: email_recipients
+            type: string
+            required: false
+            description: A list of email addresses to send failure and report emails to, comma-separated
+          - in: query
+            name: email_errors_only
+            type: boolean
+            required: false
+            default: false
+            description: If set and true, only sends a report email to email_recipients when there is an error with at least one mirror
+        responses:
+          202:
+            description: Accepted
+            schema:
+              type: object
+              description: The Celery job information of the task
+              id: CeleryTask
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+
+        email_recipients = reqargs.get("email_recipients", None)
+        if email_recipients is not None and not isinstance(email_recipients, list):
+            email_recipients = [email_recipients]
+
+        email_errors_only = bool(strtobool(reqargs.get("email_errors_only", "False")))
+
+        task = run_celery_task(
+            "cluster.automirror",
+            email_recipients=email_recipients,
+            email_errors_only=email_errors_only,
+            run_on="primary",
+        )
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "cluster.automirror",
+                "run_on": f"{get_primary_node()} (primary)",
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
+
+
+api.add_resource(API_VM_Automirror_Root, "/vm/automirror")
+
+
 ##########################################################
 # Client API - Network
 ##########################################################

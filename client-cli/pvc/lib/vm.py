@@ -714,6 +714,26 @@ def vm_autobackup(config, email_recipients=None, force_full_flag=False, wait_fla
     return get_wait_retdata(response, wait_flag)
 
 
+def vm_automirror(
+    config, email_recipients=None, email_errors_only_flag=False, wait_flag=True
+):
+    """
+    Perform a cluster VM automirror
+
+    API endpoint: POST /vm//automirror
+    API arguments: email_recipients=email_recipients, email_errors_only=email_errors_only_flag
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "email_recipients": email_recipients,
+        "email_errors_only": email_errors_only_flag,
+    }
+
+    response = call_api(config, "post", "/vm/automirror", params=params)
+
+    return get_wait_retdata(response, wait_flag)
+
+
 def vm_vcpus_set(config, vm, vcpus, topology, restart):
     """
     Set the vCPU count of the VM with topology

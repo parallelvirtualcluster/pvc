@@ -2578,6 +2578,89 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
 
 
 ###############################################################################
+# > pvc vm automirror
+###############################################################################
+@click.command(
+    name="automirror", short_help="Perform automatic virtual machine mirrors."
+)
+@connection_req
+@click.option(
+    "--email-report",
+    "email_report",
+    default=None,
+    help="Email a mirror summary report to the specified address(es), comma-separated.",
+)
+@click.option(
+    "--email-errors-only",
+    "email_errors_only_flag",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Only send a mirror summary report when at least one error occurrs.",
+)
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress if waiting.",
+)
+@click.option(
+    "--cron",
+    "cron_flag",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Run in cron mode (returns immediately with no output once job is submitted).",
+)
+def cli_vm_automirror(email_report, email_errors_only_flag, wait_flag, cron_flag):
+    """
+    Perform automated mirrors of VMs, with integrated cleanup and full/incremental scheduling.
+
+    This command enables automatic mirrors of PVC VMs at the block level, leveraging the various "pvc vm snapshot"
+    functions with an internal rentention and cleanup system. VMs and the destination cluster(s) are selected based
+    on configured VM tags and a set of static configs in the cluster's `pvc.conf` configuration.
+
+    This command should be run from cron or a timer at a regular interval (e.g. daily, hourly, etc.) which defines
+    how often mirrors are taken. Mirror retention is based only on the number of recorded mirrors on the remote side,
+    not on the time interval between them. Mirrors taken manually outside of the "automirror" command are not counted
+    towards the format or retention of automirrors.
+
+    WARNING: Running this command manually will interfere with the schedule! Do not run manually except for testing.
+
+    The actual details of the automirror, including retention policies, are defined in the main PVC configuration file
+    `/etc/pvc/pvc.conf`. See the sample configuration for more details.
+
+    An optional report on all current mirrors can be emailed to one or more email addresses using the
+    "--email-report" flag. This report will include information on all current known mirrors.
+    """
+
+    if cron_flag:
+        wait_flag = False
+
+    if email_report is not None:
+        email_recipients = email_report.split(",")
+    else:
+        email_recipients = None
+
+    retcode, retmsg = pvc.lib.vm.vm_automirror(
+        CLI_CONFIG,
+        email_recipients=email_recipients,
+        email_errors_only_flag=email_errors_only_flag,
+        wait_flag=wait_flag,
+    )
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
+
+    if cron_flag:
+        finish(retcode, None)
+    else:
+        finish(retcode, retmsg)
+
+
+###############################################################################
 # > pvc vm tag
 ###############################################################################
 @click.group(
@@ -6918,6 +7001,7 @@ cli_vm_backup.add_command(cli_vm_backup_restore)
 cli_vm_backup.add_command(cli_vm_backup_remove)
 cli_vm.add_command(cli_vm_backup)
 cli_vm.add_command(cli_vm_autobackup)
+cli_vm.add_command(cli_vm_automirror)
 cli_vm_tag.add_command(cli_vm_tag_get)
 cli_vm_tag.add_command(cli_vm_tag_add)
 cli_vm_tag.add_command(cli_vm_tag_remove)

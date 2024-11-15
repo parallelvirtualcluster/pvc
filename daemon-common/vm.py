@@ -2107,6 +2107,7 @@ def vm_worker_create_snapshot(
     domain,
     snapshot_name=None,
     zk_only=False,
+    return_status=False,
 ):
     if snapshot_name is None:
         now = datetime.now()
@@ -2124,27 +2125,34 @@ def vm_worker_create_snapshot(
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
-        fail(
-            celery,
-            f"Could not find VM '{domain}' in the cluster",
-        )
-        return False
+        message = (f"Could not find VM '{domain}' in the cluster",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     reg = re.compile("^[a-z0-9.-_]+$")
     if not reg.match(snapshot_name):
-        fail(
-            celery,
+        message = (
             "Snapshot name '{snapshot_name}' contains invalid characters; only alphanumeric, '.', '-', and '_' characters are allowed",
         )
-        return False
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     current_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
     if current_snapshots and snapshot_name in current_snapshots:
-        fail(
-            celery,
+        message = (
             f"Snapshot name '{snapshot_name}' already exists for VM '{domain}'!",
         )
-        return False
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Get the list of all RBD volumes
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
@@ -2178,11 +2186,12 @@ def vm_worker_create_snapshot(
         )
         if not ret:
             cleanup_failure()
-            fail(
-                celery,
-                msg.replace("ERROR: ", ""),
-            )
-            return False
+            message = (msg.replace("ERROR: ", ""),)
+            fail(celery, message)
+            if return_status:
+                return False, message
+            else:
+                return False
         else:
             snap_list.append(f"{pool}/{volume}@{snapshot_name}")
 
@@ -2242,12 +2251,22 @@ def vm_worker_create_snapshot(
     )
 
     current_stage += 1
-    return finish(
-        celery,
-        f"Successfully created snapshot '{snapshot_name}' of VM '{domain}'",
-        current=current_stage,
-        total=total_stages,
-    )
+    message = (f"Successfully created snapshot '{snapshot_name}' of VM '{domain}'",)
+    if return_status:
+        finish(
+            celery,
+            message,
+            current=current_stage,
+            total=total_stages,
+        )
+        return True, message
+    else:
+        return finish(
+            celery,
+            message,
+            current=current_stage,
+            total=total_stages,
+        )
 
 
 def vm_worker_remove_snapshot(
@@ -3157,6 +3176,7 @@ def vm_worker_send_snapshot(
     destination_api_verify_ssl=True,
     incremental_parent=None,
     destination_storage_pool=None,
+    return_status=False,
 ):
 
     current_stage = 0
@@ -3171,11 +3191,12 @@ def vm_worker_send_snapshot(
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
-        fail(
-            celery,
-            f"Could not find VM '{domain}' in the cluster",
-        )
-        return False
+        message = (f"Could not find VM '{domain}' in the cluster",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Get our side's VM configuration details
     try:
@@ -3184,31 +3205,34 @@ def vm_worker_send_snapshot(
         vm_detail = None
 
     if not isinstance(vm_detail, dict):
-        fail(
-            celery,
-            f"VM listing returned invalid data: {vm_detail}",
-        )
-        return False
+        message = (f"VM listing returned invalid data: {vm_detail}",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Check if the snapshot exists
     if not zkhandler.exists(
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
     ):
-        fail(
-            celery,
-            f"Could not find snapshot '{snapshot_name}' of VM '{domain}'",
-        )
-        return False
+        message = (f"Could not find snapshot '{snapshot_name}' of VM '{domain}'",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Check if the incremental parent exists
     if incremental_parent is not None and not zkhandler.exists(
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", incremental_parent)
     ):
-        fail(
-            celery,
-            f"Could not find snapshot '{snapshot_name}' of VM '{domain}'",
-        )
-        return False
+        message = (f"Could not find snapshot '{snapshot_name}' of VM '{domain}'",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     vm_name = vm_detail["name"]
 
@@ -3234,23 +3258,26 @@ def vm_worker_send_snapshot(
         if "PVC API" not in response.json().get("message"):
             raise ValueError("Remote API is not a PVC API or incorrect URI given")
     except requests.exceptions.ConnectionError as e:
-        fail(
-            celery,
-            f"Connection to remote API timed out: {e}",
-        )
-        return False
+        message = (f"Connection to remote API timed out: {e}",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
     except ValueError as e:
-        fail(
-            celery,
-            f"Connection to remote API is not valid: {e}",
-        )
-        return False
+        message = (f"Connection to remote API is not valid: {e}",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
     except Exception as e:
-        fail(
-            celery,
-            f"Connection to remote API failed: {e}",
-        )
-        return False
+        message = (f"Connection to remote API failed: {e}",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Hit the API "/status" endpoint to validate API key and cluster status
     response = session.get(
@@ -3263,11 +3290,14 @@ def vm_worker_send_snapshot(
         "pvc_version", None
     )
     if current_destination_pvc_version is None:
-        fail(
-            celery,
+        message = (
             "Connection to remote API failed: no PVC version information returned",
         )
-        return False
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     expected_destination_pvc_version = "0.9.101"
     # Work around development versions
@@ -3278,11 +3308,14 @@ def vm_worker_send_snapshot(
     if parse_version(current_destination_pvc_version) < parse_version(
         expected_destination_pvc_version
     ):
-        fail(
-            celery,
+        message = (
             f"Remote PVC cluster is too old: requires version {expected_destination_pvc_version} or higher",
         )
-        return False
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Check if the VM already exists on the remote
     response = session.get(
@@ -3301,11 +3334,12 @@ def vm_worker_send_snapshot(
         current_destination_vm_state is not None
         and current_destination_vm_state != "mirror"
     ):
-        fail(
-            celery,
-            "Remote PVC VM exists and is not a mirror",
-        )
-        return False
+        message = ("Remote PVC VM exists and is not a mirror",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Get details about VM snapshot
     _, snapshot_timestamp, snapshot_xml, snapshot_rbdsnaps = zkhandler.read_many(
@@ -3351,31 +3385,38 @@ def vm_worker_send_snapshot(
 
     # Check if this snapshot is in the remote list already
     if snapshot_name in [s["name"] for s in destination_vm_snapshots]:
-        fail(
-            celery,
-            f"Snapshot {snapshot_name} already exists on the target",
-        )
-        return False
+        message = (f"Snapshot {snapshot_name} already exists on the target",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Check if this snapshot is older than the latest remote VM snapshot
     if (
         len(destination_vm_snapshots) > 0
         and snapshot_timestamp < destination_vm_snapshots[0]["timestamp"]
     ):
-        fail(
-            celery,
+        message = (
             f"Target has a newer snapshot ({destination_vm_snapshots[0]['name']}); cannot send old snapshot {snapshot_name}",
         )
-        return False
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Check that our incremental parent exists on the remote VM
     if incremental_parent is not None:
         if incremental_parent not in [s["name"] for s in destination_vm_snapshots]:
-            fail(
-                celery,
+            message = (
                 f"Can not send incremental for a snapshot ({incremental_parent}) which does not exist on the target",
             )
-            return False
+            fail(celery, message)
+            if return_status:
+                return False, message
+            else:
+                return False
 
     # Begin send, set stages
     total_stages += 1 + (3 * len(snapshot_rbdsnaps))
@@ -3393,6 +3434,25 @@ def vm_worker_send_snapshot(
         "source_snapshot": incremental_parent,
     }
 
+    # Strip out autobackup and automirror tags
+    # These should never be wanted on the receiving side
+    from daemon_lib.config import (
+        get_autobackup_configuration,
+        get_automirror_configuration,
+    )
+
+    autobackup_config = get_autobackup_configuration()
+    automirror_config = get_automirror_configuration()
+    new_tags = list()
+    for tag in vm_detail["tags"]:
+        tag_base = tag["name"].split(":")[0]
+        if tag_base in [t for t in autobackup_config["backup_tags"]] or tag_base in [
+            t for t in automirror_config["mirror_tags"]
+        ]:
+            continue
+        new_tags.append(tag)
+    vm_detail["tags"] = new_tags
+
     response = session.post(
         f"{destination_api_uri}/vm/{vm_name}/snapshot/receive/config",
         headers={"Content-Type": "application/json"},
@@ -3400,11 +3460,12 @@ def vm_worker_send_snapshot(
         json=vm_detail,
     )
     if response.status_code != 200:
-        fail(
-            celery,
-            f"Failed to send config: {response.json()['message']}",
-        )
-        return False
+        message = (f"Failed to send config: {response.json()['message']}",)
+        fail(celery, message)
+        if return_status:
+            return False, message
+        else:
+            return False
 
     # Create the block devices on the remote side if this is a new VM send
     block_t_start = time.time()
@@ -3431,11 +3492,12 @@ def vm_worker_send_snapshot(
                 error_message = f"Multiple details returned for volume {rbd_name}"
             else:
                 error_message = f"Error getting details for volume {rbd_name}"
-            fail(
-                celery,
-                error_message,
-            )
-            return False
+            message = (error_message,)
+            fail(celery, message)
+            if return_status:
+                return False, message
+            else:
+                return False
 
         try:
             local_volume_size = ceph.format_bytes_fromhuman(retdata[0]["stats"]["size"])
@@ -3460,11 +3522,12 @@ def vm_worker_send_snapshot(
             data=None,
         )
         if response.status_code != 404 and current_destination_vm_state is None:
-            fail(
-                celery,
-                f"Remote storage pool {pool} already contains volume {volume}",
-            )
-            return False
+            message = (f"Remote storage pool {pool} already contains volume {volume}",)
+            fail(celery, message)
+            if return_status:
+                return False, message
+            else:
+                return False
 
         if current_destination_vm_state is not None:
             try:
@@ -3474,7 +3537,10 @@ def vm_worker_send_snapshot(
             except Exception as e:
                 error_message = f"Failed to get volume size for remote {rbd_name}: {e}"
                 fail(celery, error_message)
-                return False
+                if return_status:
+                    return False, error_message
+                else:
+                    return False
 
             if local_volume_size != remote_volume_size:
                 response = session.put(
@@ -3482,11 +3548,12 @@ def vm_worker_send_snapshot(
                     params={"new_size": local_volume_size, "force": True},
                 )
                 if response.status_code != 200:
-                    fail(
-                        celery,
-                        "Failed to resize remote volume to match local volume",
-                    )
-                    return False
+                    message = ("Failed to resize remote volume to match local volume",)
+                    fail(celery, message)
+                    if return_status:
+                        return False, message
+                    else:
+                        return False
 
         # Send the volume to the remote
         cluster = rados.Rados(conffile="/etc/ceph/ceph.conf")
@@ -3557,11 +3624,14 @@ def vm_worker_send_snapshot(
                     stream=True,
                 )
                 if response.status_code != 200:
-                    fail(
-                        celery,
+                    message = (
                         f"Failed to send diff batch: {response.json()['message']}",
                     )
-                    return False
+                    fail(celery, message)
+                    if return_status:
+                        return False, message
+                    else:
+                        return False
 
                 current_chunk_time = time.time()
                 chunk_time = current_chunk_time - last_chunk_time
@@ -3609,11 +3679,12 @@ def vm_worker_send_snapshot(
                     buffer.clear()  # Clear the buffer after sending
                     buffer_size = 0  # Reset buffer size
             except Exception:
-                fail(
-                    celery,
-                    f"Failed to send snapshot: {response.json()['message']}",
-                )
-                return False
+                message = (f"Failed to send snapshot: {response.json()['message']}",)
+                fail(celery, message)
+                if return_status:
+                    return False, message
+                else:
+                    return False
             finally:
                 image.close()
                 ioctx.close()
@@ -3657,11 +3728,14 @@ def vm_worker_send_snapshot(
                     data=full_chunker(),
                 )
                 if response.status_code != 200:
-                    fail(
-                        celery,
+                    message = (
                         f"Failed to send snapshot: {response.json()['message']}",
                     )
-                    return False
+                    fail(celery, message)
+                    if return_status:
+                        return False, message
+                    else:
+                        return False
             finally:
                 image.close()
                 ioctx.close()
@@ -3678,11 +3752,12 @@ def vm_worker_send_snapshot(
                 params=send_params,
             )
             if response.status_code != 200:
-                fail(
-                    celery,
-                    f"Failed to send snapshot: {response.json()['message']}",
-                )
-                return False
+                message = (f"Failed to send snapshot: {response.json()['message']}",)
+                fail(celery, message)
+                if return_status:
+                    return False, message
+                else:
+                    return False
         finally:
             image.close()
             ioctx.close()
@@ -3692,12 +3767,24 @@ def vm_worker_send_snapshot(
     block_mbps = round(block_total_mb / (block_t_end - block_t_start), 1)
 
     current_stage += 1
-    return finish(
-        celery,
+    message = (
         f"Successfully sent snapshot '{snapshot_name}' of VM '{domain}' to remote cluster '{destination_api_uri}' (average {block_mbps} MB/s)",
-        current=current_stage,
-        total=total_stages,
     )
+    if return_status:
+        finish(
+            celery,
+            message,
+            current=current_stage,
+            total=total_stages,
+        )
+        return True, message
+    else:
+        return finish(
+            celery,
+            message,
+            current=current_stage,
+            total=total_stages,
+        )
 
 
 def vm_worker_create_mirror(
