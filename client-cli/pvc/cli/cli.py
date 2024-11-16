@@ -2088,7 +2088,7 @@ def cli_vm_snapshot_send(
     """
     Send the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the remote PVC cluster DESTINATION.
 
-    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
+    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option. SSL validation will be inferred from this CLI instance's configuration.
 
     The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
 
@@ -2193,7 +2193,7 @@ def cli_vm_mirror_create(
     """
     For the virtual machine DOMAIN, create a new snapshot and send that snapshot to the remote PVC cluster DESTINATION; creates a cross-cluster snapshot mirror of the VM.
 
-    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
+    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option. SSL validation will be inferred from this CLI instance's configuration.
 
     This command will create snapshots named in the format "mrYYYYMMDDHHMMSS" to differentiate them from manually-created snapshots. The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
 
@@ -2293,7 +2293,7 @@ def cli_vm_mirror_promote(
     """
     For the virtual machine DOMAIN, shut down the VM on this cluster, create a new snapshot, send that snapshot to the remote PVC cluster DESTINATION, start the VM on DESTINATION, and optionally remove the VM from this cluster; performs a cross-cluster "move" of the VM, with or without retaining the source as a snapshot mirror.
 
-    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
+    DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option. SSL validation will be inferred from this CLI instance's configuration.
 
     This command will create snapshots named in the format "mrYYYYMMDDHHMMSS" to differentiate them from manually-created snapshots. The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
 
