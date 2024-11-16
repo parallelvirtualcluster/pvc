@@ -2642,8 +2642,9 @@ def cli_vm_automirror(email_report, email_errors_only_flag, wait_flag, cron_flag
     The actual details of the automirror, including retention policies, are defined in the main PVC configuration file
     `/etc/pvc/pvc.conf`. See the sample configuration for more details.
 
-    An optional report on all current mirrors can be emailed to one or more email addresses using the
-    "--email-report" flag. This report will include information on all current known mirrors.
+    An optional report on the job's results can be emailed to one or more email addresses using the "--email-report" flag.
+    By default, reports are sent for all mirror jobs; reporting only on jobs that experience one or more errors can be
+    specified using the "--email-errors-only" flag.
 
     This command will create snapshots named in the format "amYYYYMMDDHHMMSS" to differentiate them from manually-created snapshots.
 
