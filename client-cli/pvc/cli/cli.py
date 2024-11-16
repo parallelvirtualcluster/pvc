@@ -2092,7 +2092,7 @@ def cli_vm_snapshot_send(
 
     The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
 
-    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify one with the "-p"/"--detination-pool" option.
+    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify a valid pool name on the destination with the "-p"/"--detination-pool" option.
 
     Incremental sends are possible by specifying the "-i"/"--incremental-parent" option along with a parent snapshot name. To correctly receive, that parent snapshot must exist on DESTINATION. Subsequent sends after the first do not have to be incremental, but an incremental send is likely to perform better than a full send if the VM experiences few writes.
 
@@ -2191,17 +2191,19 @@ def cli_vm_mirror_create(
     wait_flag,
 ):
     """
-    For the virtual machine DOMAIN: create a new snapshot (dated), and send snapshot to the remote PVC cluster DESTINATION; creates a cross-cluster snapshot mirror of the VM.
+    For the virtual machine DOMAIN, create a new snapshot and send that snapshot to the remote PVC cluster DESTINATION; creates a cross-cluster snapshot mirror of the VM.
 
     DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
 
-    The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
+    This command will create snapshots named in the format "mrYYYYMMDDHHMMSS" to differentiate them from manually-created snapshots. The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
 
     This command may be used repeatedly to send new updates for a remote VM mirror. If a valid shared snapshot is found on the destination cluster, block device transfers will be incremental based on that snapshot.
 
-    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify one with the "-p"/"--detination-pool" option.
+    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify a valid pool name on the destination with the "-p"/"--detination-pool" option.
 
-    WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances. Only VMs in the "mirror" state can accept new sends. Consider using "mirror promote" instead of any manual promotion attempts.
+    NOTE: Any configured autobackup and automirror tag(s) will be removed from the VM metadata on the remote cluster to prevent possible loops and because configurations may differ between clusters.
+
+    WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances; THIS WILL CAUSE DATA LOSS ON THE SOURCE CLUSTER. To avoid this, use "mirror promote" instead of attempting a manual promotion. Only VMs in the "mirror" state on the target can accept sends.
 
     WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
     """
@@ -2289,15 +2291,19 @@ def cli_vm_mirror_promote(
     wait_flag,
 ):
     """
-    For the virtual machine DOMAIN: shut down on this cluster, create a new snapshot (dated), send snapshot to the remote PVC cluster DESTINATION, start on DESTINATION, and optionally remove from this cluster; performs a cross-cluster move of the VM, with or without retaining the source as a snapshot mirror.
+    For the virtual machine DOMAIN, shut down the VM on this cluster, create a new snapshot, send that snapshot to the remote PVC cluster DESTINATION, start the VM on DESTINATION, and optionally remove the VM from this cluster; performs a cross-cluster "move" of the VM, with or without retaining the source as a snapshot mirror.
 
     DOMAIN may be a UUID or name. DESTINATION may be either a configured PVC connection name in this CLI instance (i.e. a valid argument to "--connection"), or a full API URI, including the scheme, port and API prefix; if using the latter, an API key can be specified with the "-k"/"--destination-api-key" option.
 
-    The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
+    This command will create snapshots named in the format "mrYYYYMMDDHHMMSS" to differentiate them from manually-created snapshots. The send will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
 
     If a valid shared snapshot is found on the destination cluster, block device transfers will be incremental based on that snapshot.
 
-    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify one with the "-p"/"--detination-pool" option.
+    By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify a valid pool name on the destination with the "-p"/"--detination-pool" option.
+
+    NOTE: Any configured autobackup and automirror tag(s) will be removed from the VM metadata on the remote cluster to prevent possible loops and because configurations may differ between clusters.
+
+    WARNING: The VM will experience some amount of downtime during the promotion.
 
     WARNING: Once promoted, if the "--remove" flag is not set, the VM will be in the state "mirror" on this cluster. This effectively flips which cluster is the "primary" for this VM, and subsequent mirror management commands must be run against the destination cluster instead of this cluster. If the "--remove" flag is set, the VM will be removed from this cluster entirely once successfully started on the destination cluster.
 
@@ -2551,6 +2557,10 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
 
     The "--force-full" option can be used to force all configured VMs to perform a "full" level backup this run,
     which can help synchronize the backups of existing VMs with new ones.
+
+    This command will create snapshots named in the format "abYYYYMMDDHHMMSS" to differentiate them from manually-created snapshots.
+
+    For more details on VM snapshot exports, see "pvc vm snapshot export --help".
     """
 
     if cron_flag:
@@ -2634,6 +2644,10 @@ def cli_vm_automirror(email_report, email_errors_only_flag, wait_flag, cron_flag
 
     An optional report on all current mirrors can be emailed to one or more email addresses using the
     "--email-report" flag. This report will include information on all current known mirrors.
+
+    This command will create snapshots named in the format "amYYYYMMDDHHMMSS" to differentiate them from manually-created snapshots.
+
+    For more details on VM mirrors, see "pvc vm mirror create --help".
     """
 
     if cron_flag:
