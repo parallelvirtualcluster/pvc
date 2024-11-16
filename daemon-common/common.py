@@ -486,34 +486,11 @@ def getDomainSnapshots(zkhandler, dom_uuid):
 
         _snap_timestamp = float(snap_timestamp)
         snap_age_secs = int(current_timestamp) - int(_snap_timestamp)
-        snap_age = f"{snap_age_secs} seconds"
-        snap_age_minutes = int(snap_age_secs / 60)
-        if snap_age_minutes > 0:
-            if snap_age_minutes > 1:
-                s = "s"
-            else:
-                s = ""
-            snap_age = f"{snap_age_minutes} minute{s}"
-        snap_age_hours = int(snap_age_secs / 3600)
-        if snap_age_hours > 0:
-            if snap_age_hours > 1:
-                s = "s"
-            else:
-                s = ""
-            snap_age = f"{snap_age_hours} hour{s}"
-        snap_age_days = int(snap_age_secs / 86400)
-        if snap_age_days > 0:
-            if snap_age_days > 1:
-                s = "s"
-            else:
-                s = ""
-            snap_age = f"{snap_age_days} day{s}"
-
         snapshots.append(
             {
                 "name": snap_name,
                 "timestamp": snap_timestamp,
-                "age": snap_age,
+                "age": snap_age_secs,
                 "xml_diff_lines": snap_dom_xml_diff,
                 "rbd_snapshots": snap_rbd_snapshots,
             }

@@ -64,6 +64,37 @@ def format_metric(integer):
     return human_integer
 
 
+def format_age(age_secs):
+    human_age = f"{age_secs} seconds"
+
+    age_minutes = int(age_secs / 60)
+    age_minutes_rounded = int(round(age_secs / 60))
+    if age_minutes > 0:
+        if age_minutes_rounded > 1:
+            s = "s"
+        else:
+            s = ""
+        human_age = f"{age_minutes_rounded} minute{s}"
+    age_hours = int(age_secs / 3600)
+    age_hours_rounded = int(round(age_secs / 3600))
+    if age_hours > 0:
+        if age_hours_rounded > 1:
+            s = "s"
+        else:
+            s = ""
+        human_age = f"{age_hours_rounded} hour{s}"
+    age_days = int(age_secs / 86400)
+    age_days_rounded = int(round(age_secs / 86400))
+    if age_days > 0:
+        if age_days_rounded > 1:
+            s = "s"
+        else:
+            s = ""
+        human_age = f"{age_days_rounded} day{s}"
+
+    return human_age
+
+
 class UploadProgressBar(object):
     def __init__(self, filename, end_message="", end_nl=True):
         file_size = os.path.getsize(filename)

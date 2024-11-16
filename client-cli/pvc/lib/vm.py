@@ -23,7 +23,13 @@ import time
 import re
 
 import pvc.lib.ansiprint as ansiprint
-from pvc.lib.common import call_api, format_bytes, format_metric, get_wait_retdata
+from pvc.lib.common import (
+    call_api,
+    format_bytes,
+    format_metric,
+    format_age,
+    get_wait_retdata,
+)
 
 
 #
@@ -2056,7 +2062,7 @@ def format_info(config, domain_information, long_output):
         if _snapshots_name_length > snapshots_name_length:
             snapshots_name_length = _snapshots_name_length
 
-        _snapshots_age_length = len(snapshot["age"]) + 1
+        _snapshots_age_length = len(format_age(snapshot["age"])) + 1
         if _snapshots_age_length > snapshots_age_length:
             snapshots_age_length = _snapshots_age_length
 
@@ -2096,7 +2102,7 @@ def format_info(config, domain_information, long_output):
                     snapshots_age_length=snapshots_age_length,
                     snapshots_xml_changes_length=snapshots_xml_changes_length,
                     snapshots_name=snapshot["name"],
-                    snapshots_age=snapshot["age"],
+                    snapshots_age=format_age(snapshot["age"]),
                     snapshots_xml_changes=xml_diff_counts,
                     end=ansiprint.end(),
                 )

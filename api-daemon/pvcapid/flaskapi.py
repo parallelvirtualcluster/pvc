@@ -1783,7 +1783,7 @@ class API_VM_Root(Resource):
                         description: Unix timestamp of the snapshot
                       age:
                         type: string
-                        description: Human-readable age of the snapshot in the largest viable unit (seconds, minutes, hours, days)
+                        description: Age of the snapshot in seconds
                       rbd_snapshots:
                         type: array
                         items:
