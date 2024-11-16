@@ -1800,7 +1800,7 @@ def cli_vm_flush_locks(domain, wait_flag):
     """
     Flush stale RBD locks for virtual machine DOMAIN. DOMAIN may be a UUID or name. DOMAIN must be in the stop, disable, or fail state before flushing locks.
 
-    NOTE: This is a task-based command. The "--wait" flag (default) will block and show progress. Specifying the "--no-wait" flag will return immediately with a job ID instead, which can be queried externally later.
+    (†) NOTE: This is a task-based command. The "--wait" flag (default) will block and show progress. Specifying the "--no-wait" flag will return immediately with a job ID instead, which can be queried externally later.
     """
 
     retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain, wait_flag=wait_flag)
@@ -1845,7 +1845,7 @@ def cli_vm_snapshot_create(domain, snapshot_name, wait_flag):
     Create a snapshot of the disks and XML configuration of virtual machine DOMAIN, with the
     optional name SNAPSHOT_NAME. DOMAIN may be a UUID or name.
 
-    WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
+    (!) WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
     of a running VM, restoring that snapshot will be equivalent to having forcibly restarted the
     VM at the moment of the snapshot.
     """
@@ -2019,7 +2019,7 @@ def cli_vm_snapshot_import(
 
     If the "-r"/"--retain-snapshot" option is specified (the default), for incremental imports, only the parent snapshot is kept; for full imports, the imported snapshot is kept. If the "-R"/"--remove-snapshot" option is specified, the imported snapshot is removed.
 
-    WARNING: The "-R"/"--remove-snapshot" option will invalidate any existing incremental snapshots based on the same incremental parent for the imported VM.
+    (!) WARNING: The "-R"/"--remove-snapshot" option will invalidate any existing incremental snapshots based on the same incremental parent for the imported VM.
     """
 
     retcode, retmsg = pvc.lib.vm.vm_import_snapshot(
@@ -2096,9 +2096,9 @@ def cli_vm_snapshot_send(
 
     Incremental sends are possible by specifying the "-i"/"--incremental-parent" option along with a parent snapshot name. To correctly receive, that parent snapshot must exist on DESTINATION. Subsequent sends after the first do not have to be incremental, but an incremental send is likely to perform better than a full send if the VM experiences few writes.
 
-    WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances. Only VMs in the "mirror" state can accept new sends.
+    (!) WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances. Only VMs in the "mirror" state can accept new sends.
 
-    WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
+    (!) WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
     """
 
     connections_config = get_store(CLI_CONFIG["store_path"])
@@ -2201,11 +2201,11 @@ def cli_vm_mirror_create(
 
     By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify a valid pool name on the destination with the "-p"/"--detination-pool" option.
 
-    NOTE: Any configured autobackup and automirror tag(s) will be removed from the VM metadata on the remote cluster to prevent possible loops and because configurations may differ between clusters.
+    (†) NOTE: Any configured autobackup and automirror tag(s) will be removed from the VM metadata on the remote cluster to prevent possible loops and because configurations may differ between clusters.
 
-    WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances; THIS WILL CAUSE DATA LOSS ON THE SOURCE CLUSTER. To avoid this, use "mirror promote" instead of attempting a manual promotion. Only VMs in the "mirror" state on the target can accept sends.
+    (!) WARNING: Once sent, the VM will be in the state "mirror" on the destination cluster. If it is subsequently started, for instance for disaster recovery, a new snapshot must be taken on the destination cluster and sent back or data will be inconsistent between the instances; THIS WILL CAUSE DATA LOSS ON THE SOURCE CLUSTER. To avoid this, use "mirror promote" instead of attempting a manual promotion. Only VMs in the "mirror" state on the target can accept sends.
 
-    WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
+    (!) WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
     """
 
     connections_config = get_store(CLI_CONFIG["store_path"])
@@ -2301,13 +2301,13 @@ def cli_vm_mirror_promote(
 
     By default, the storage pool of the sending cluster will be used at the destination cluster as well. If a pool of that name does not exist, specify a valid pool name on the destination with the "-p"/"--detination-pool" option.
 
-    NOTE: Any configured autobackup and automirror tag(s) will be removed from the VM metadata on the remote cluster to prevent possible loops and because configurations may differ between clusters.
+    (†) NOTE: Any configured autobackup and automirror tag(s) will be removed from the VM metadata on the remote cluster to prevent possible loops and because configurations may differ between clusters.
 
-    WARNING: The VM will experience some amount of downtime during the promotion.
+    (!) WARNING: The VM will experience some amount of downtime during the promotion.
 
-    WARNING: Once promoted, if the "--remove" flag is not set, the VM will be in the state "mirror" on this cluster. This effectively flips which cluster is the "primary" for this VM, and subsequent mirror management commands must be run against the destination cluster instead of this cluster. If the "--remove" flag is set, the VM will be removed from this cluster entirely once successfully started on the destination cluster.
+    (!) WARNING: Once promoted, if the "--remove" flag is not set, the VM will be in the state "mirror" on this cluster. This effectively flips which cluster is the "primary" for this VM, and subsequent mirror management commands must be run against the destination cluster instead of this cluster. If the "--remove" flag is set, the VM will be removed from this cluster entirely once successfully started on the destination cluster.
 
-    WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
+    (!) WARNING: This functionality has no automatic backout on the remote side. While a properly configured cluster should not fail any step in the process, a situation like an intermittent network connection might cause a failure which would have to be manually corrected on that side, usually by removing the mirrored VM and retrying, or rolling back to a previous snapshot and retrying. Future versions may enhance automatic recovery, but for now this would be up to the administrator.
     """
 
     connections_config = get_store(CLI_CONFIG["store_path"])
@@ -2445,7 +2445,7 @@ def cli_vm_backup_restore(domain, backup_datestring, backup_path, retain_snapsho
 
     If the "-r"/"--retain-snapshot" option is specified (the default), for incremental restores, only the parent snapshot is kept; for full restores, the restored snapshot is kept. If the "-R"/"--remove-snapshot" option is specified, the imported snapshot is removed.
 
-    WARNING: The "-R"/"--remove-snapshot" option will invalidate any existing incremental backups based on the same incremental parent for the restored VM.
+    (!) WARNING: The "-R"/"--remove-snapshot" option will invalidate any existing incremental backups based on the same incremental parent for the restored VM.
     """
 
     echo(
@@ -2477,7 +2477,7 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
 
     Remove the backup BACKUP_DATESTRING, including snapshots, of virtual machine DOMAIN stored in BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
-    WARNING: Removing an incremental parent will invalidate any existing incremental backups based on that backup.
+    (!) WARNING: Removing an incremental parent will invalidate any existing incremental backups based on that backup.
     """
 
     echo(
@@ -2546,7 +2546,7 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
     recorded backups, not on the time interval between them. Exports taken manually outside of the "autobackup"
     command are not counted towards the format or retention of autobackups.
 
-    WARNING: Running this command manually will interfere with the schedule! Do not run manually except for testing.
+    (!) WARNING: Running this command manually will interfere with the schedule! Do not run manually except for testing.
 
     The actual details of the autobackup, including retention policies, full-vs-incremental, pre- and post- run
     mounting/unmounting commands, etc. are defined in the main PVC configuration file `/etc/pvc/pvc.conf`. See
@@ -2637,7 +2637,7 @@ def cli_vm_automirror(email_report, email_errors_only_flag, wait_flag, cron_flag
     not on the time interval between them. Mirrors taken manually outside of the "automirror" command are not counted
     towards the format or retention of automirrors.
 
-    WARNING: Running this command manually will interfere with the schedule! Do not run manually except for testing.
+    (!) WARNING: Running this command manually will interfere with the schedule! Do not run manually except for testing.
 
     The actual details of the automirror, including retention policies, are defined in the main PVC configuration file
     `/etc/pvc/pvc.conf`. See the sample configuration for more details.
@@ -2994,7 +2994,7 @@ def cli_vm_network_add(
 
     NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
 
-    NOTE: Adding a SR-IOV network device in the "hostdev" mode has the following caveats:
+    (†) NOTE: Adding a SR-IOV network device in the "hostdev" mode has the following caveats:
 
       1. The VM will not be able to be live migrated; it must be shut down to migrate between nodes. The VM metadata will be updated to force this.
 
@@ -3345,7 +3345,7 @@ def cli_vm_list(target_node, target_state, target_tag, limit, negate, format_fun
     """
     List all virtual machines; optionally only match names or full UUIDs matching regex LIMIT.
 
-    NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
+    (†) NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
     """
 
     retcode, retdata = pvc.lib.vm.vm_list(
@@ -3459,7 +3459,7 @@ def cli_network_add(
     """
     Add a new virtual network with VXLAN identifier VNI.
 
-    NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. If unset, defaults to the underlying device MTU which will be set explcitly when the network is added to the nodes.
+    (†) NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. If unset, defaults to the underlying device MTU which will be set explcitly when the network is added to the nodes.
 
     Examples:
 
@@ -3572,7 +3572,7 @@ def cli_network_modify(
     """
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
 
-    NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. To reset an explicit MTU to the default underlying device MTU, specify '--mtu' with a quoted empty string argument.
+    (†) NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. To reset an explicit MTU to the default underlying device MTU, specify '--mtu' with a quoted empty string argument.
 
     Example:
 
@@ -3608,7 +3608,7 @@ def cli_network_remove(net):
     """
     Remove an existing virtual network NET; NET must be a VNI.
 
-    WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
+    (!) WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
     that all client VMs have been removed from the network or undefined behaviour may occur.
     """
 
@@ -3797,11 +3797,11 @@ def cli_network_acl_add(net, direction, description, rule, order):
     """
     Add a new NFT firewall rule to network NET; the rule is a literal NFT rule belonging to the forward table for the client network; NET must be a VNI.
 
-    NOTE: All client networks are default-allow in both directions; deny rules MUST be added here at the end of the sequence for a default-deny setup.
+    (†) NOTE: All client networks are default-allow in both directions; deny rules MUST be added here at the end of the sequence for a default-deny setup.
 
-    NOTE: Ordering places the rule at the specified ID, not before it; the old rule of that ID and all subsequent rules will be moved down.
+    (†) NOTE: Ordering places the rule at the specified ID, not before it; the old rule of that ID and all subsequent rules will be moved down.
 
-    NOTE: Descriptions are used as names, and must be unique within a network (both directions).
+    (†) NOTE: Descriptions are used as names, and must be unique within a network (both directions).
 
     Example:
 
@@ -4291,7 +4291,7 @@ def cli_storage_osd_create_db_vg(node, device, wait_flag):
 
     Only one OSD database volume group on a single physical device, named "osd-db", is supported per node, so it must be fast and large enough to act as an effective OSD database device for all OSDs on the node. Attempting to add additional database volume groups after the first will result in an error.
 
-    WARNING: If the OSD database device fails, all OSDs on the node using it will be lost and must be recreated.
+    (!) WARNING: If the OSD database device fails, all OSDs on the node using it will be lost and must be recreated.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_osd_db_vg_add(
@@ -4366,13 +4366,13 @@ def cli_storage_osd_add(
 
     The "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" options, if specified, and if a OSD DB VG exists on the node (see "pvc storage osd create-db-vg"), will instruct the OSD to locate its RocksDB database and WAL on a new logical volume on that OSD DB VG. If "-r"/"--ext-db-ratio" is specified, the sizing of this DB LV will be the given ratio (specified as a decimal percentage e.g. 0.05 for 5%) of the size of the OSD (e.g. 0.05 on a 1TB SSD will create a 50GB LV). If "-s"/"--ext-db-size" is specified, the sizing of this DB LV will be the given human-unit size (e.g. 1024M, 20GB, etc.). An 0.05 ratio is recommended; at least 0.02 is required, and more than 0.05 can potentially increase performance in write-heavy workloads.
 
-    WARNING: An external DB carries important caveats. An external DB is only suggested for relatively slow OSD devices (e.g. SATA SSDs) when there is also a much faster, more robust, but smaller storage device in the system (e.g. an NVMe or 3DXPoint SSD) which can accelerate the OSD. An external DB is NOT recommended for NVMe OSDs as this will hamper performance and reliability. Additionally, it is important to note that the OSD will depend entirely on this external DB device; they cannot be separated without destroying the OSD, and the OSD cannot function without the external DB device, thus introducting a single point of failure. Use this feature with extreme care.
+    (!) WARNING: An external DB carries important caveats. An external DB is only suggested for relatively slow OSD devices (e.g. SATA SSDs) when there is also a much faster, more robust, but smaller storage device in the system (e.g. an NVMe or 3DXPoint SSD) which can accelerate the OSD. An external DB is NOT recommended for NVMe OSDs as this will hamper performance and reliability. Additionally, it is important to note that the OSD will depend entirely on this external DB device; they cannot be separated without destroying the OSD, and the OSD cannot function without the external DB device, thus introducting a single point of failure. Use this feature with extreme care.
 
     The "-c"/"--osd-count" option allows the splitting of a single block device into multiple logical OSDs. This is recommended in the Ceph literature for extremely fast OSD block devices (i.e. NVMe or 3DXPoint) which can saturate a single OSD process. Usually, 2 or 4 OSDs is recommended, based on the size and performance of the OSD disk; more than 4 OSDs per volume is not recommended, and this option is not recommended for SATA SSDs.
 
     Note that, if "-c"/"--osd-count" is specified, the provided "-w"/"--weight" will be the weight of EACH created OSD, not the block device as a whole. Ensure you take this into account if mixing and matching OSD block devices. Additionally, if "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" is specified, one DB LV will be created for EACH created OSD, of the given ratio/size per OSD; ratios are calculated from the OSD size, not the underlying device.
 
-    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
+    (†) NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_osd_add(
@@ -4447,15 +4447,15 @@ def cli_storage_osd_replace(
 
     If OSDID is part of a split OSD set, any peer split OSDs with the same configured block device will be replaced as well. The split count will be retained and cannot be changed with this command; to do so, all OSDs in the split OSD set must be removed and new OSD(s) created.
 
-    WARNING: This operation entails (and is functionally equivalent to) a removal and recreation of the specified OSD and, if applicable, all peer split OSDs. This is an intensive and potentially destructive action. Ensure that the cluster is otherwise healthy before proceeding, and ensure the subsequent rebuild completes successfully. Do not attempt this operation on a severely degraded cluster without first considering the possible data loss implications.
+    (!) WARNING: This operation entails (and is functionally equivalent to) a removal and recreation of the specified OSD and, if applicable, all peer split OSDs. This is an intensive and potentially destructive action. Ensure that the cluster is otherwise healthy before proceeding, and ensure the subsequent rebuild completes successfully. Do not attempt this operation on a severely degraded cluster without first considering the possible data loss implications.
 
     If the "-o"/"--old-device" option is specified, is a valid block device on the node, is readable/accessible, and contains the metadata for the specified OSD, it will be zapped. If this option is not specified, the system will try to find the old block device automatically to zap it. If it can't be found, the OSD will simply be removed from the CRUSH map and PVC database before recreating. This option can provide a cleaner deletion when replacing a working device that has a different block path, but is otherwise unnecessary.
 
     The "-w"/"--weight", "-r"/"--ext-db-ratio", and "-s"/"--ext-db-size" allow overriding the existing weight and external DB LV for the OSD(s), if desired. If unset, the existing weight and external DB LV size (if applicable) will be used for the replacement OSD(s) instead.
 
-    NOTE: If neither the "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" option is specified, and the OSD(s) had an external DB LV, it cannot be removed a new DB LV will be created for the replacement OSD(s); this cannot be avoided. However, if the OSD(s) did not have an external DB LV, and one of these options is specified, a new DB LV will be added to the new OSD.
+    (†) NOTE: If neither the "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" option is specified, and the OSD(s) had an external DB LV, it cannot be removed a new DB LV will be created for the replacement OSD(s); this cannot be avoided. However, if the OSD(s) did not have an external DB LV, and one of these options is specified, a new DB LV will be added to the new OSD.
 
-    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
+    (†) NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_osd_replace(
@@ -4498,9 +4498,9 @@ def cli_storage_osd_refresh(osdid, device, wait_flag):
 
     Existing data, IDs, weights, DB LVs, etc. of the OSD will be preserved. Any split peer OSD(s) on the same block device will also be automatically refreshed.
 
-    NOTE: If the OSD(s) had an external DB device, it must exist before refreshing the OSD. If it can't be found, the OSD cannot be reimported and must be recreated.
+    (†) NOTE: If the OSD(s) had an external DB device, it must exist before refreshing the OSD. If it can't be found, the OSD cannot be reimported and must be recreated.
 
-    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
+    (†) NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_osd_refresh(
@@ -4541,9 +4541,9 @@ def cli_storage_osd_remove(osdid, force_flag, wait_flag):
 
     DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which will negatively affect performance and available space. It is STRONGLY RECOMMENDED to set an OSD out (using 'pvc storage osd out') and allow the cluster to fully rebalance, verified with 'pvc storage status', before removing an OSD.
 
-    NOTE: The "-f"/"--force" option is useful after replacing a failed node, to ensure the OSD is removed even if the OSD in question does not properly exist on the node after a rebuild.
+    (†) NOTE: The "-f"/"--force" option is useful after replacing a failed node, to ensure the OSD is removed even if the OSD in question does not properly exist on the node after a rebuild.
 
-    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
+    (†) NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_osd_remove(
@@ -5023,7 +5023,7 @@ def cli_storage_volume_snapshot_add(pool, volume, name):
     """
     Add a snapshot with name NAME of Ceph RBD volume VOLUME in pool POOL.
 
-    WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
+    (!) WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
     of a running VM, restoring that snapshot will be equivalent to having forcibly restarted the
     VM at the moment of the snapshot.
     """
@@ -5088,11 +5088,11 @@ def cli_storage_volume_snapshot_rollback(pool, volume, name):
 
     DANGER: All data written to the volume since the given snapshot will be permanently lost.
 
-    WARNING: A rollback cannot be performed on an RBD volume with active I/O. Doing so will cause
+    (!) WARNING: A rollback cannot be performed on an RBD volume with active I/O. Doing so will cause
     undefined behaviour and possible corruption. Ensure that any VM(s) using this RBD volume are
     stopped or disabled before attempting a snapshot rollback.
 
-    WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
+    (!) WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
     of a running VM, restoring that snapshot will be equivalent to having forcibly restarted the
     VM at the moment of the snapshot.
     """
@@ -5596,7 +5596,7 @@ def cli_provisioner_template_network_vni_add(name, vni, permit_duplicate_flag):
 
     Networks will be added to VMs in the order they are added and displayed within the template.
 
-    NOTE: Normally, the API prevents duplicate VNIs from being added to the same network template
+    (†) NOTE: Normally, the API prevents duplicate VNIs from being added to the same network template
     by returning an error, as this requirement is very niche. If you do not desire this behaviour,
     use the "-d"/"--permit-duplicate" option to bypass the check.
     """
@@ -6941,7 +6941,7 @@ def cli(
     else:
         echo(
             CLI_CONFIG,
-            "WARNING: No client or home configuration directory found; using /tmp instead",
+            "(†) NOTE: No client or home configuration directory found; using /tmp instead",
             stderr=True,
         )
         store_path = "/tmp/pvc"
