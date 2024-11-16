@@ -2550,7 +2550,7 @@ def cli_vm_autobackup(email_report, force_full_flag, wait_flag, cron_flag):
 
     The actual details of the autobackup, including retention policies, full-vs-incremental, pre- and post- run
     mounting/unmounting commands, etc. are defined in the main PVC configuration file `/etc/pvc/pvc.conf`. See
-    the sample configuration for more details.
+    the sample configuration for more details on how to configure autobackups.
 
     An optional report on all current backups can be emailed to one or more email addresses using the
     "--email-report" flag. This report will include information on all current known backups.
@@ -2640,7 +2640,7 @@ def cli_vm_automirror(email_report, email_errors_only_flag, wait_flag, cron_flag
     (!) WARNING: Running this command manually will interfere with the schedule! Do not run manually except for testing.
 
     The actual details of the automirror, including retention policies, are defined in the main PVC configuration file
-    `/etc/pvc/pvc.conf`. See the sample configuration for more details.
+    `/etc/pvc/pvc.conf`. See the sample configuration for more details on how to configure automirrors.
 
     An optional report on the job's results can be emailed to one or more email addresses using the "--email-report" flag.
     By default, reports are sent for all mirror jobs; reporting only on jobs that experience one or more errors can be
