@@ -401,7 +401,14 @@ def upload_ova(zkhandler, pool, name, ova_size):
         vnc = False
         serial = True
     retdata, retcode = provisioner.create_template_system(
-        name, vcpu_count, vram_mb, serial, vnc, vnc_bind=None, ova=ova_id
+        name,
+        vcpu_count,
+        vram_mb,
+        serial,
+        vnc,
+        vnc_bind=None,
+        ova=ova_id,
+        migration_max_downtime=300,
     )
     if retcode != 200:
         return retdata, retcode
