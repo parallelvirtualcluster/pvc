@@ -221,7 +221,7 @@ def create_template_system(
     node_selector=None,
     node_autostart=False,
     migration_method=None,
-    migration_max_downtime=None,
+    migration_max_downtime=300,
     ova=None,
 ):
     if list_template_system(name, is_fuzzy=False)[-1] != 404:
