@@ -179,6 +179,10 @@ def upload_ova(zkhandler, pool, name, ova_size):
             }
             retcode = 400
             return output, retcode
+        else:
+            ova_script = "default_ova"
+    else:
+        ova_script = "ova"
 
     ova_archive = None
 
@@ -414,7 +418,7 @@ def upload_ova(zkhandler, pool, name, ova_size):
         None,
         None,
         userdata=None,
-        script="default_ova",
+        script=ova_script,
         ova=name,
         arguments=None,
     )
