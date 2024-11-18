@@ -121,6 +121,9 @@ def format_bytes_tohuman(databytes):
 
 
 def format_bytes_fromhuman(datahuman):
+    if not isinstance(datahuman, str):
+        datahuman = str(datahuman)
+
     if not re.search(r"[A-Za-z]+", datahuman):
         dataunit = "B"
         datasize = float(datahuman)
