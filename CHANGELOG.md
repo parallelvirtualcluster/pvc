@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.104](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.104)
+
+  * [API Daemon] Fixes a bug that failed uploading of RAW block devices in "storage volume upload"
+  * [API Daemon/CLI Client] Adds support for VM automirrors, replicating the functionality of autobackup but for cross-cluster mirroring
+  * [CLI Client] Improves the help output of several commands
+  * [API Daemon/CLI Client] Moves VM snapshot age conversions to human-readable values out of the API and into the client to open up more programatic handling in the future
+  * [Worker Daemon] Improves the Celery logging output clarity by including the calling function in any task output
+
 ###### [v0.9.103](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.103)
 
   * [Provisioner] Fixes a bug with the change in `storage_hosts` to FQDNs affecting the VM Builder

@@ -1,3 +1,13 @@
+pvc (0.9.104-0) unstable; urgency=high
+
+  * [API Daemon] Fixes a bug that failed uploading of RAW block devices in "storage volume upload"
+  * [API Daemon/CLI Client] Adds support for VM automirrors, replicating the functionality of autobackup but for cross-cluster mirroring
+  * [CLI Client] Improves the help output of several commands
+  * [API Daemon/CLI Client] Moves VM snapshot age conversions to human-readable values out of the API and into the client to open up more programatic handling in the future
+  * [Worker Daemon] Improves the Celery logging output clarity by including the calling function in any task output
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 18 Nov 2024 10:53:56 -0500
+
 pvc (0.9.103-0) unstable; urgency=high
 
   * [Provisioner] Fixes a bug with the change in `storage_hosts` to FQDNs affecting the VM Builder
