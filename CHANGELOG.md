@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.105](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.105)
+
+  * [API Daemon/Provisioner] Corrects some small bugs with OVA handling
+
 ###### [v0.9.104](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.104)
 
   * [API Daemon] Fixes a bug that failed uploading of RAW block devices in "storage volume upload"

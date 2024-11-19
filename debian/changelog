@@ -1,3 +1,9 @@
+pvc (0.9.105-0) unstable; urgency=high
+
+  * [API Daemon/Provisioner] Corrects some small bugs with OVA handling
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 19 Nov 2024 14:43:43 -0500
+
 pvc (0.9.104-0) unstable; urgency=high
 
   * [API Daemon] Fixes a bug that failed uploading of RAW block devices in "storage volume upload"
