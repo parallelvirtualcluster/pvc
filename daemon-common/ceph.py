@@ -596,11 +596,11 @@ def add_volume(zkhandler, pool, name, size, force_flag=False, zk_only=False):
 
     # Check if we're greater than 80% utilization after the create; error if so unless we have the force flag
     pool_total_bytes = (
-        int(pool_information["stats"]["used_bytes"]) + pool_total_free_bytes
+        int(pool_information["stats"]["stored_bytes"]) + pool_total_free_bytes
     )
     pool_safe_total_bytes = int(pool_total_bytes * 0.80)
     pool_safe_free_bytes = pool_safe_total_bytes - int(
-        pool_information["stats"]["used_bytes"]
+        pool_information["stats"]["stored_bytes"]
     )
     if size_bytes >= pool_safe_free_bytes and not force_flag:
         return (
@@ -656,11 +656,11 @@ def clone_volume(zkhandler, pool, name_src, name_new, force_flag=False):
 
     # Check if we're greater than 80% utilization after the create; error if so unless we have the force flag
     pool_total_bytes = (
-        int(pool_information["stats"]["used_bytes"]) + pool_total_free_bytes
+        int(pool_information["stats"]["stored_bytes"]) + pool_total_free_bytes
     )
     pool_safe_total_bytes = int(pool_total_bytes * 0.80)
     pool_safe_free_bytes = pool_safe_total_bytes - int(
-        pool_information["stats"]["used_bytes"]
+        pool_information["stats"]["stored_bytes"]
     )
     if size_bytes >= pool_safe_free_bytes and not force_flag:
         return (
@@ -721,11 +721,11 @@ def resize_volume(zkhandler, pool, name, size, force_flag=False):
 
     # Check if we're greater than 80% utilization after the create; error if so unless we have the force flag
     pool_total_bytes = (
-        int(pool_information["stats"]["used_bytes"]) + pool_total_free_bytes
+        int(pool_information["stats"]["stored_bytes"]) + pool_total_free_bytes
     )
     pool_safe_total_bytes = int(pool_total_bytes * 0.80)
     pool_safe_free_bytes = pool_safe_total_bytes - int(
-        pool_information["stats"]["used_bytes"]
+        pool_information["stats"]["stored_bytes"]
     )
     if size_bytes >= pool_safe_free_bytes and not force_flag:
         return (
