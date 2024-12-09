@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.106](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.106)
+
+  * [API Daemon] Fixes a calculation bug when checking storage free space
+
 ###### [v0.9.105](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.105)
 
   * [API Daemon/Provisioner] Corrects some small bugs with OVA handling

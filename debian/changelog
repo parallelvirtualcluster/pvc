@@ -1,3 +1,9 @@
+pvc (0.9.106-0) unstable; urgency=high
+
+  * [API Daemon] Fixes a calculation bug when checking storage free space
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 09 Dec 2024 16:45:10 -0500
+
 pvc (0.9.105-0) unstable; urgency=high
 
   * [API Daemon/Provisioner] Corrects some small bugs with OVA handling
