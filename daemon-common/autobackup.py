@@ -469,15 +469,16 @@ def run_vm_backup(zkhandler, celery, config, vm_detail, force_full=False):
 
     if len(marked_for_deletion) > 0:
         for backup_to_delete in marked_for_deletion:
-            ret = vm.vm_worker_remove_snapshot(
-                zkhandler, None, vm_name, backup_to_delete["snapshot_name"]
-            )
-            if ret is False:
-                error_message = f"Failed to remove obsolete backup snapshot '{backup_to_delete['snapshot_name']}', leaving in tracked backups"
+            try:
+                ret = vm.vm_worker_remove_snapshot(
+                    zkhandler, None, vm_name, backup_to_delete["snapshot_name"]
+                )
+            except Exception:
+                error_message = f"Failed to remove obsolete backup snapshot '{backup_to_delete['snapshot_name']}', removing from tracked backups anyways"
                 log_err(celery, error_message)
-            else:
-                rmtree(f"{vm_backup_path}/{backup_to_delete['snapshot_name']}")
-                tracked_backups.remove(backup_to_delete)
+
+            rmtree(f"{vm_backup_path}/{backup_to_delete['snapshot_name']}")
+            tracked_backups.remove(backup_to_delete)
 
     tracked_backups = update_tracked_backups()
     return tracked_backups
