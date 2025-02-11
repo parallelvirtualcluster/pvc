@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.107](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.107)
+
+  * [Worker Daemon] Fixes a bug where snapshot removal fails during autobackups
+
 ###### [v0.9.106](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.106)
 
   * [API Daemon] Fixes a calculation bug when checking storage free space

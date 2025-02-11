@@ -1,3 +1,9 @@
+pvc (0.9.107-0) unstable; urgency=high
+
+  * [Worker Daemon] Fixes a bug where snapshot removal fails during autobackups
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 10 Feb 2025 23:15:21 -0500
+
 pvc (0.9.106-0) unstable; urgency=high
 
   * [API Daemon] Fixes a calculation bug when checking storage free space
