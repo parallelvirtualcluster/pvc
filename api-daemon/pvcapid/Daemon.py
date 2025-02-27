@@ -81,6 +81,7 @@ def create_app():
     print("|--------------------------------------------------------------|")
     print("| Parallel Virtual Cluster API daemon v{0: <23} |".format(version))
     print("| Debug: {0: <53} |".format(str(config["debug"])))
+    print("| Cluster: {0: <51} |".format(config["cluster_name"]))
     print("| API version: v{0: <46} |".format(API_VERSION))
     print(
         "| Listen: {0: <52} |".format(

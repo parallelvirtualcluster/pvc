@@ -64,6 +64,7 @@ def entrypoint():
     logger.out("|--------------------------------------------------------------|")
     logger.out("| Parallel Virtual Cluster health daemon v{0: <20} |".format(version))
     logger.out("| Debug: {0: <53} |".format(str(config["debug"])))
+    logger.out("| Cluster: {0: <51} |".format(config["cluster_name"]))
     logger.out("| FQDN: {0: <54} |".format(config["node_fqdn"]))
     logger.out("| Host: {0: <54} |".format(config["node_hostname"]))
     logger.out("| ID: {0: <56} |".format(config["node_id"]))

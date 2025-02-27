@@ -496,6 +496,7 @@ def getClusterInformation(zkhandler):
 
     # Format the status data
     cluster_information = {
+        "cluster_name": zkhandler.read("base.config"),
         "cluster_health": getClusterHealthFromFaults(zkhandler, faults_data),
         "node_health": getNodeHealth(zkhandler, node_list),
         "maintenance": maintenance_state,
