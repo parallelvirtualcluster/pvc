@@ -142,7 +142,9 @@ def getNodeInformation(zkhandler, node_name):
     node_mem_free = int(_node_mem_free)
     node_load = float(_node_load)
     node_domains_count = int(_node_domains_count)
-    node_running_domains = _node_running_domains.split()
+    node_running_domains = common.translate_domains_to_names(
+        zkhandler, _node_running_domains.split()
+    )
 
     try:
         node_health = int(_node_health)

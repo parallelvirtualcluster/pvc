@@ -1212,3 +1212,7 @@ def get_detect_device(detect_string):
         return device
     else:
         return None
+
+
+def translate_domains_to_names(zkhandler, domain_list):
+    return list(zkhandler.read_many([("domain.name", d) for d in domain_list]))
