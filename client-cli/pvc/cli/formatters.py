@@ -221,7 +221,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
             continue
         if state in ["start"]:
             state_colour = ansii["green"]
-        elif state in ["migrate", "disable", "provision", "mirror"]:
+        elif state in ["migrate", "disable", "provision"]:
             state_colour = ansii["blue"]
         elif state in ["mirror"]:
             state_colour = ansii["purple"]
