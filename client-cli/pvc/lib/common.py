@@ -27,6 +27,7 @@ from requests import get, post, put, patch, delete, Response
 from requests.exceptions import ConnectionError
 from time import time
 from urllib3 import disable_warnings
+from pvc.cli.cli import VERSION
 
 
 def format_bytes(size_bytes):
@@ -165,6 +166,9 @@ def call_api(
     uri = "{}://{}{}{}".format(
         config["api_scheme"], config["api_host"], config["api_prefix"], request_uri
     )
+
+    # Add custom User-Agent header
+    headers["User-Agent"] = f"pvc-client-cli/{VERSION}"
 
     # Craft the authentication header if required
     if config["api_key"]:
