@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pvc"
+version = "0.9.107"
+dependencies = [
+    "Click",
+    "PyYAML",
+    "lxml",
+    "colorama",
+    "requests",
+    "requests-toolbelt",
+]
+
+[tool.setuptools]
+packages = ["pvc.cli", "pvc.lib"]
+
+[project.scripts]
+pvc = "pvc.cli.cli:cli"

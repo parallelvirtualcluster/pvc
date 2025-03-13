@@ -7,13 +7,14 @@ export DH_VERBOSE = 1
 	dh $@ --with python3
 
 override_dh_python3:
-	cd $(CURDIR)/client-cli; pybuild --system=distutils --dest-dir=../debian/pvc-client-cli/
+	cd $(CURDIR)/client-cli; pybuild --system=pyproject --dest-dir=../debian/pvc-client-cli/
 	mkdir -p debian/pvc-client-cli/usr/lib/python3
 	mv debian/pvc-client-cli/usr/lib/python3*/* debian/pvc-client-cli/usr/lib/python3/
 	rm -r $(CURDIR)/client-cli/.pybuild $(CURDIR)/client-cli/pvc.egg-info
 
 override_dh_auto_clean:
-	find . -name "__pycache__" -o -name ".pybuild" -exec rm -fr {} + || true
+	find $(CURDIR) -name "__pycache__" -o -name ".pybuild" -exec rm -fr {} + || true
+	rm -r $(CURDIR)/client-cli/build
 
 # If you need to rebuild the Sphinx documentation
 # Add spinxdoc to the dh --with line

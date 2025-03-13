@@ -8,3 +8,4 @@ debian/pvc-*/
 debian/*.log
 debian/*.substvars
 debian/files
+client-cli/build/
