@@ -22,7 +22,8 @@ sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," node-d
 sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," health-daemon/pvchealthd/Daemon.py
 sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," worker-daemon/pvcworkerd/Daemon.py
 sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," api-daemon/pvcapid/Daemon.py
-sed -i "s,version=\"${current_version}\",version=\"${new_version}\"," client-cli/setup.py
+sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," client-cli/pyproject.toml
+sed -i "s,VERSION = \"${current_version}\",VERSION = \"${new_version}\"," client-cli/pvc/cli/cli.py
 echo ${new_version} > .version
 
 changelog_tmpdir=$( mktemp -d )

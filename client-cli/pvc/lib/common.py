@@ -23,10 +23,285 @@ from ast import literal_eval
 from click import echo, progressbar
 from math import ceil
 from os.path import getsize
-from requests import get, post, put, patch, delete, Response
-from requests.exceptions import ConnectionError
 from time import time
-from urllib3 import disable_warnings
+import json
+import socket
+import ssl
+
+# Define a Response class to mimic requests.Response
+class Response:
+    def __init__(self, status_code, headers, content):
+        self.status_code = status_code
+        self.headers = headers
+        self.content = content
+        self._json = None
+        self.text = content.decode('utf-8', errors='replace') if content else ''
+        self.ok = 200 <= status_code < 300
+        self.url = None  # Will be set by call_api
+        self.reason = None  # HTTP reason phrase
+        self.encoding = 'utf-8'
+        self.elapsed = None  # Time elapsed
+        self.request = None  # Original request
+
+    def json(self):
+        if self._json is None:
+            # Don't catch JSONDecodeError - let it propagate like requests does
+            self._json = json.loads(self.content.decode('utf-8'))
+        return self._json
+
+    def raise_for_status(self):
+        """Raises HTTPError if the status code is 4XX/5XX"""
+        if 400 <= self.status_code < 600:
+            raise Exception(f"HTTP Error {self.status_code}")
+
+# Define ConnectionError to mimic requests.exceptions.ConnectionError
+class ConnectionError(Exception):
+    pass
+
+class ErrorResponse(Response):
+    def __init__(self, json_data, status_code, headers):
+        self.status_code = status_code
+        self.headers = headers
+        self._json = json_data
+        self.content = json.dumps(json_data).encode('utf-8') if json_data else b''
+
+    def json(self):
+        return self._json
+
+def _encode_params(params):
+    """Simple URL parameter encoder"""
+    if not params:
+        return ''
+
+    parts = []
+    for key, value in params.items():
+        if isinstance(value, bool):
+            value = str(value).lower()
+        elif value is None:
+            value = ''
+        elif isinstance(value, (list, tuple)):
+            # Handle lists and tuples by creating multiple parameters with the same name
+            for item in value:
+                parts.append(f"{key}={item}")
+            continue  # Skip the normal append since we've already added the parts
+        else:
+            value = str(value)
+        parts.append(f"{key}={value}")
+
+    return '?' + '&'.join(parts)
+
+def call_api(
+    config,
+    operation,
+    request_uri,
+    headers={},
+    params=None,
+    data=None,
+    files=None,
+):
+    """
+    Make an API call to the PVC API using native Python libraries.
+    """
+    # Set timeouts - fast connection timeout, longer read timeout
+    connect_timeout = 2.05  # Connection timeout in seconds
+    read_timeout = 172800.0 # Read timeout in seconds (much longer to allow for slow operations)
+
+    # Import VERSION from cli.py - this is a lightweight import since cli.py is already loaded
+    from pvc.cli.cli import VERSION
+
+    # Set User-Agent header if not already set
+    if "User-Agent" not in headers:
+        headers["User-Agent"] = f"pvc-client-cli/{VERSION}"
+
+    # Craft the URI
+    uri = "{}://{}{}{}".format(
+        config["api_scheme"], config["api_host"], config["api_prefix"], request_uri
+    )
+
+    # Parse the URI without using urllib
+    if '://' in uri:
+        scheme, rest = uri.split('://', 1)
+    else:
+        scheme = 'http'
+        rest = uri
+
+    if '/' in rest:
+        netloc, path = rest.split('/', 1)
+        path = '/' + path
+    else:
+        netloc = rest
+        path = '/'
+
+    # Extract host and port
+    if ':' in netloc:
+        host, port_str = netloc.split(':', 1)
+        port = int(port_str)
+    else:
+        host = netloc
+        port = 443 if scheme == 'https' else 80
+
+    # Craft the authentication header if required
+    if config["api_key"]:
+        headers["X-Api-Key"] = config["api_key"]
+
+    # Add content type if not present
+    if "Content-Type" not in headers and data is not None and files is None:
+        headers["Content-Type"] = "application/json"
+
+    # Prepare query string
+    query_string = _encode_params(params)
+
+    # Prepare path with query string
+    full_path = path + query_string
+
+    # Prepare body
+    body = None
+    if data is not None and files is None:
+        if isinstance(data, dict):
+            body = json.dumps(data).encode('utf-8')
+        else:
+            body = data.encode('utf-8') if isinstance(data, str) else data
+
+    # Handle file uploads (multipart/form-data)
+    if files:
+        boundary = '----WebKitFormBoundary' + str(int(time()))
+        headers['Content-Type'] = f'multipart/form-data; boundary={boundary}'
+
+        body = b''
+        # Add form fields
+        if data:
+            for key, value in data.items():
+                body += f'--{boundary}\r\n'.encode()
+                body += f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode()
+                body += f'{value}\r\n'.encode()
+
+        # Add files
+        for key, file_tuple in files.items():
+            filename, fileobj, content_type = file_tuple
+            body += f'--{boundary}\r\n'.encode()
+            body += f'Content-Disposition: form-data; name="{key}"; filename="{filename}"\r\n'.encode()
+            body += f'Content-Type: {content_type}\r\n\r\n'.encode()
+            body += fileobj.read()
+            body += b'\r\n'
+
+        body += f'--{boundary}--\r\n'.encode()
+
+    # Use http.client instead of raw sockets for better HTTP protocol handling
+    try:
+        # Special handling for GET with retries
+        if operation == "get":
+            retry_on_code = [429, 500, 502, 503, 504]
+            for i in range(3):
+                failed = False
+                try:
+                    # Create the appropriate connection with separate timeouts
+                    if scheme == 'https':
+                        import ssl
+                        context = None
+                        if not config["verify_ssl"]:
+                            context = ssl._create_unverified_context()
+
+                        import http.client
+                        conn = http.client.HTTPSConnection(
+                            host, 
+                            port=port,
+                            timeout=connect_timeout,  # This is the connection timeout
+                            context=context
+                        )
+                    else:
+                        import http.client
+                        conn = http.client.HTTPConnection(
+                            host,
+                            port=port,
+                            timeout=connect_timeout  # This is the connection timeout
+                        )
+
+                    # Make the request
+                    conn.request(operation.upper(), full_path, body=body, headers=headers)
+
+                    # Set a longer timeout for reading the response
+                    conn.sock.settimeout(read_timeout)
+
+                    http_response = conn.getresponse()
+
+                    # Read response data
+                    status_code = http_response.status
+                    response_headers = dict(http_response.getheaders())
+                    response_data = http_response.read()
+
+                    conn.close()
+
+                    # Create a Response object
+                    response = Response(status_code, response_headers, response_data)
+
+                    if response.status_code in retry_on_code:
+                        failed = True
+                        continue
+                    break
+                except Exception as e:
+                    failed = True
+                    if 'conn' in locals():
+                        conn.close()
+                    continue
+
+            if failed:
+                error = f"Code {response.status_code}" if 'response' in locals() else "Timeout"
+                raise ConnectionError(f"Failed to connect after 3 tries ({error})")
+        else:
+            # Handle other HTTP methods
+            if scheme == 'https':
+                import ssl
+                context = None
+                if not config["verify_ssl"]:
+                    context = ssl._create_unverified_context()
+
+                import http.client
+                conn = http.client.HTTPSConnection(
+                    host, 
+                    port=port,
+                    timeout=connect_timeout,  # This is the connection timeout
+                    context=context
+                )
+            else:
+                import http.client
+                conn = http.client.HTTPConnection(
+                    host,
+                    port=port,
+                    timeout=connect_timeout  # This is the connection timeout
+                )
+
+            # Make the request
+            conn.request(operation.upper(), full_path, body=body, headers=headers)
+
+            # Set a longer timeout for reading the response
+            conn.sock.settimeout(read_timeout)
+
+            http_response = conn.getresponse()
+
+            # Read response data
+            status_code = http_response.status
+            response_headers = dict(http_response.getheaders())
+            response_data = http_response.read()
+
+            conn.close()
+
+            # Create a Response object
+            response = Response(status_code, response_headers, response_data)
+
+    except Exception as e:
+        message = f"Failed to connect to the API: {e}"
+        code = getattr(response, 'status_code', 504) if 'response' in locals() else 504
+        response = ErrorResponse({"message": message}, code, None)
+
+    # Display debug output
+    if config["debug"]:
+        echo("API endpoint: {}".format(uri), err=True)
+        echo("Response code: {}".format(response.status_code), err=True)
+        echo("Response headers: {}".format(response.headers), err=True)
+        echo(err=True)
+
+    # Always return the response object - no special handling
+    return response
 
 
 def format_bytes(size_bytes):
@@ -137,118 +412,6 @@ class UploadProgressBar(object):
             echo()
             if self.end_message:
                 echo(self.end_message + self.end_suffix, nl=self.end_nl)
-
-
-class ErrorResponse(Response):
-    def __init__(self, json_data, status_code, headers):
-        self.json_data = json_data
-        self.status_code = status_code
-        self.headers = headers
-
-    def json(self):
-        return self.json_data
-
-
-def call_api(
-    config,
-    operation,
-    request_uri,
-    headers={},
-    params=None,
-    data=None,
-    files=None,
-):
-    # Set the connect timeout to 2 seconds but extremely long (48 hour) data timeout
-    timeout = (2.05, 172800)
-
-    # Craft the URI
-    uri = "{}://{}{}{}".format(
-        config["api_scheme"], config["api_host"], config["api_prefix"], request_uri
-    )
-
-    # Craft the authentication header if required
-    if config["api_key"]:
-        headers["X-Api-Key"] = config["api_key"]
-
-    # Determine the request type and hit the API
-    disable_warnings()
-    try:
-        response = None
-        if operation == "get":
-            retry_on_code = [429, 500, 502, 503, 504]
-            for i in range(3):
-                failed = False
-                try:
-                    response = get(
-                        uri,
-                        timeout=timeout,
-                        headers=headers,
-                        params=params,
-                        data=data,
-                        verify=config["verify_ssl"],
-                    )
-                    if response.status_code in retry_on_code:
-                        failed = True
-                        continue
-                    break
-                except ConnectionError:
-                    failed = True
-                    continue
-            if failed:
-                error = f"Code {response.status_code}" if response else "Timeout"
-                raise ConnectionError(f"Failed to connect after 3 tries ({error})")
-        if operation == "post":
-            response = post(
-                uri,
-                timeout=timeout,
-                headers=headers,
-                params=params,
-                data=data,
-                files=files,
-                verify=config["verify_ssl"],
-            )
-        if operation == "put":
-            response = put(
-                uri,
-                timeout=timeout,
-                headers=headers,
-                params=params,
-                data=data,
-                files=files,
-                verify=config["verify_ssl"],
-            )
-        if operation == "patch":
-            response = patch(
-                uri,
-                timeout=timeout,
-                headers=headers,
-                params=params,
-                data=data,
-                verify=config["verify_ssl"],
-            )
-        if operation == "delete":
-            response = patch, delete(
-                uri,
-                timeout=timeout,
-                headers=headers,
-                params=params,
-                data=data,
-                verify=config["verify_ssl"],
-            )
-    except Exception as e:
-        message = "Failed to connect to the API: {}".format(e)
-        code = response.status_code if response else 504
-        response = ErrorResponse({"message": message}, code, None)
-
-    # Display debug output
-    if config["debug"]:
-        echo("API endpoint: {}".format(uri), err=True)
-        echo("Response code: {}".format(response.status_code), err=True)
-        echo("Response headers: {}".format(response.headers), err=True)
-        echo(err=True)
-
-    # Return the response object
-    return response
 
 
 def get_wait_retdata(response, wait_flag):

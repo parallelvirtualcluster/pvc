@@ -19,6 +19,17 @@
 #
 ###############################################################################
 
+VERSION = "0.9.107"
+
+# Import only the essential parts of click for CLI definition
+from click import group, command, option, argument, pass_context
+
+# Import minimal required modules
+from pvc.lib.common import call_api
+
+# Use lazy imports for modules not needed during initial CLI parsing
+from pvc.lib.lazy_imports import yaml, click_advanced
+
 from colorama import Fore
 from difflib import unified_diff
 from functools import wraps
@@ -97,10 +108,7 @@ def version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    from pkg_resources import get_distribution
-
-    version = get_distribution("pvc").version
-    echo(CLI_CONFIG, f"Parallel Virtual Cluster CLI client version {version}")
+    echo(CLI_CONFIG, f"Parallel Virtual Cluster CLI client version {VERSION}")
     ctx.exit()
 
 
