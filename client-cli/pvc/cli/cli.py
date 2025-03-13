@@ -25,7 +25,6 @@ from functools import wraps
 from json import dump as jdump
 from json import dumps as jdumps
 from json import loads as jloads
-from lxml.etree import fromstring, tostring
 from os import environ, makedirs, path
 from re import sub, match
 from yaml import load as yload
@@ -1192,6 +1191,8 @@ def cli_vm_define(
 
     # Verify our XML is sensible
     try:
+        from lxml.etree import fromstring, tostring
+
         xml_data = fromstring(vmconfig_data)
         new_cfg = tostring(xml_data, pretty_print=True).decode("utf8")
     except Exception:
@@ -1377,6 +1378,9 @@ def cli_vm_modify(
 
     # Grab the current config
     current_vm_cfg_raw = vm_information.get("xml")
+
+    from lxml.etree import fromstring, tostring
+
     xml_data = fromstring(current_vm_cfg_raw)
     current_vm_cfgfile = tostring(xml_data, pretty_print=True).decode("utf8").strip()
 
@@ -1435,6 +1439,8 @@ def cli_vm_modify(
 
     # Verify our XML is sensible
     try:
+        from lxml.etree import fromstring, tostring
+
         xml_data = fromstring(new_vm_cfgfile)
         new_cfg = tostring(xml_data, pretty_print=True).decode("utf8")
     except Exception as e:
@@ -3265,6 +3271,9 @@ def cli_vm_dump(filename, domain):
         finish(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
     current_vm_cfg_raw = retdata.get("xml")
+
+    from lxml.etree import fromstring, tostring
+
     xml_data = fromstring(current_vm_cfg_raw)
     current_vm_cfgfile = tostring(xml_data, pretty_print=True).decode("utf8")
     xml = current_vm_cfgfile.strip()
