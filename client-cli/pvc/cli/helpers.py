@@ -20,7 +20,6 @@
 ###############################################################################
 
 from click import echo as click_echo
-from distutils.util import strtobool
 from json import load as jload
 from json import dump as jdump
 from os import chmod, environ, getpid, path, get_terminal_size
@@ -150,9 +149,7 @@ def get_config(store_data, connection=None):
     if connection == "local":
         config["verify_ssl"] = False
     else:
-        config["verify_ssl"] = bool(
-            strtobool(environ.get("PVC_CLIENT_VERIFY_SSL", "True"))
-        )
+        config["verify_ssl"] = environ.get("PVC_CLIENT_VERIFY_SSL", "True") == "True"
 
     return config
 
