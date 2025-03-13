@@ -23,10 +23,6 @@ import math
 
 from os import path
 from json import loads
-from requests_toolbelt.multipart.encoder import (
-    MultipartEncoder,
-    MultipartEncoderMonitor,
-)
 
 import pvc.lib.ansiprint as ansiprint
 from pvc.lib.common import UploadProgressBar, call_api, get_wait_retdata
@@ -1212,6 +1208,12 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
     bar = UploadProgressBar(
         image_file, end_message="Parsing file on remote side...", end_nl=False
     )
+
+    from requests_toolbelt.multipart.encoder import (
+        MultipartEncoder,
+        MultipartEncoderMonitor,
+    )
+
     upload_data = MultipartEncoder(
         fields={
             "file": ("filename", open(image_file, "rb"), "application/octet-stream")

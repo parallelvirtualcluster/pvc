@@ -19,11 +19,6 @@
 #
 ###############################################################################
 
-from requests_toolbelt.multipart.encoder import (
-    MultipartEncoder,
-    MultipartEncoderMonitor,
-)
-
 import pvc.lib.ansiprint as ansiprint
 from pvc.lib.common import UploadProgressBar, call_api, get_wait_retdata
 
@@ -549,6 +544,12 @@ def ova_upload(config, name, ova_file, params):
     bar = UploadProgressBar(
         ova_file, end_message="Parsing file on remote side...", end_nl=False
     )
+
+    from requests_toolbelt.multipart.encoder import (
+        MultipartEncoder,
+        MultipartEncoderMonitor,
+    )
+
     upload_data = MultipartEncoder(
         fields={"file": ("filename", open(ova_file, "rb"), "application/octet-stream")}
     )
