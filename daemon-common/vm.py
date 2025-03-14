@@ -605,12 +605,14 @@ def rename_vm(zkhandler, domain, new_domain):
             rbd_list.append(disk["name"].split("/")[1])
 
     # Rename each volume in turn
+    rbd_list_new = []
     for idx, rbd in enumerate(rbd_list):
         rbd_new = re.sub(r"{}".format(domain), new_domain, rbd)
         # Skip renaming if nothing changed
         if rbd_new == rbd:
             continue
         ceph.rename_volume(zkhandler, pool_list[idx], rbd, rbd_new)
+        rbd_list_new.append(f"{pool_list[idx]}/{rbd_new}")
 
     # Replace the name in the config
     vm_config_new = (
@@ -627,6 +629,7 @@ def rename_vm(zkhandler, domain, new_domain):
         [
             (("domain", dom_uuid), new_domain),
             (("domain.xml", dom_uuid), vm_config_new),
+            (("domain.rbdlist", dom_uuid), ",".join(rbd_list_new)),
         ]
     )
 
