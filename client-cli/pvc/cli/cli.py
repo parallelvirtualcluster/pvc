@@ -51,6 +51,8 @@ import click
 ###############################################################################
 
 
+VERSION = "0.9.107"
+
 CONTEXT_SETTINGS = dict(
     help_option_names=["-h", "--help"], max_content_width=MAX_CONTENT_WIDTH
 )
@@ -97,10 +99,7 @@ def version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    from pkg_resources import get_distribution
-
-    version = get_distribution("pvc").version
-    echo(CLI_CONFIG, f"Parallel Virtual Cluster CLI client version {version}")
+    echo(CLI_CONFIG, f"Parallel Virtual Cluster CLI client version {VERSION}")
     ctx.exit()
 
 
