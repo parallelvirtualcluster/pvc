@@ -5,6 +5,7 @@ Maintainer: Joshua Boniface <joshua@boniface.me>
 Standards-Version: 3.9.8
 Homepage: https://www.boniface.me
 X-Python3-Version: >= 3.7
+Build-Depends: pybuild-plugin-pyproject, dh-python
 
 Package: pvc-daemon-node
 Architecture: all
