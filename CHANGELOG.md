@@ -1,5 +1,18 @@
 ## PVC Changelog
 
+###### [v1.0](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0)
+
+  **Announcement**: We are pleased to announce PVC 1.0! Functionally speaking, there are only a few minor improvements over the previous 0.9.107, but I believe it's finally time to call this a "1.0" release. Recently I have had much less opportunity to work on PVC as I would like, so some features are still not quite there, but those can arrive in future versions over time.
+  **Enhancement**: The PVC CLI has been made much more efficient in terms of imports, allowing it to run on much lower spec hardware (in my case, on a small SBC). It's still not perfect, but multi-second import times are no longer an issue. The CLI client has also been moved to a more modern build system in preparation for Debian 13 "Trixie".
+
+  * [Daemons] Add cluster name to outputs during startup
+  * [CLI Client] Translate domain UUIDs to names in full node detail output for better readability
+  * [CLI Client] Fix colouring bug for mirror state
+  * [CLI Client] Significantly improve import efficiency throughout the client to avoid long load times on slow hardware
+  * [CLI Client] Port build to pyproject.toml and increase Debuild compat to 13
+  * [API Daemon] Fix bug with RBD list update after VM rename
+  * [API Daemon] Fix bug/crash if Ceph volume stats are invalid/empty
+
 ###### [v0.9.107](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.107)
 
   * [Worker Daemon] Fixes a bug where snapshot removal fails during autobackups
