@@ -555,9 +555,16 @@ def getCephVolumes(zkhandler, pool):
 def getVolumeInformation(zkhandler, pool, volume):
     # Parse the stats data
     volume_stats_raw = zkhandler.read(("volume.stats", f"{pool}/{volume}"))
-    volume_stats = dict(json.loads(volume_stats_raw))
-    # Format the size to something nicer
-    volume_stats["size"] = format_bytes_tohuman(volume_stats["size"])
+    try:
+        volume_stats = dict(json.loads(volume_stats_raw))
+        # Format the size to something nicer
+        volume_stats["size"] = format_bytes_tohuman(volume_stats["size"])
+    except Exception:
+        volume_stats = dict(
+            json.loads(
+                f'{"name":"{volume}","id":"","size":0,"objects":0,"order":0,"object_size":0,"snapshot_count":0,"block_name_prefix":"","format":0,"features":[],"op_features":[],"flags":[],"create_timestamp":"","access_timestamp":"","modify_timestamp":""}'
+            )
+        )
 
     volume_information = {"name": volume, "pool": pool, "stats": volume_stats}
     return volume_information
