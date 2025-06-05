@@ -27,7 +27,7 @@ from requests import get, post, put, patch, delete, Response
 from requests.exceptions import ConnectionError
 from time import time
 from urllib3 import disable_warnings
-from pvc.cli.cli import VERSION
+from pvc.cli.helpers import VERSION
 
 
 def format_bytes(size_bytes):

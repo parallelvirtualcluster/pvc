@@ -51,8 +51,6 @@ import click
 ###############################################################################
 
 
-VERSION = "0.9.107"
-
 CONTEXT_SETTINGS = dict(
     help_option_names=["-h", "--help"], max_content_width=MAX_CONTENT_WIDTH
 )

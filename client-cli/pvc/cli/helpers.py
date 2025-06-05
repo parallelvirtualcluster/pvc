@@ -30,6 +30,8 @@ from yaml import load as yload
 from yaml import SafeLoader
 
 
+VERSION = "1.0"
+
 DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvc.conf"}
 DEFAULT_STORE_FILENAME = "pvc.json"
 DEFAULT_API_PREFIX = "/api/v1"
