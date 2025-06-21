@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v1.0.1](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0.1)
+
+  * [CLI Client] [Bugfix] Fix bug with DELETE endpoints returning invalid data
+
 ###### [v1.0](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0)
 
   **Announcement**: We are pleased to announce PVC 1.0! Functionally speaking, there are only a few minor improvements over the previous 0.9.107, but I believe it's finally time to call this a "1.0" release. Recently I have had much less opportunity to work on PVC as I would like, so some features are still not quite there, but those can arrive in future versions over time.
