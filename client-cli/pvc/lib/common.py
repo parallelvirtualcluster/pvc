@@ -231,7 +231,7 @@ def call_api(
                 verify=config["verify_ssl"],
             )
         if operation == "delete":
-            response = patch, delete(
+            response = delete(
                 uri,
                 timeout=timeout,
                 headers=headers,
