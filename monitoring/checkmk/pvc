@@ -3,4 +3,5 @@
 # PVC cluster status check for Check_MK (agent-side)
 
 echo "<<<pvc>>>"
-pvc --quiet status --format json
+hostname -s
+pvc --quiet cluster status --format json

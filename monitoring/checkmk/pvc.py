@@ -17,24 +17,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .agent_based_api.v1 import *
-from cmk.base.check_api import host_name
+from cmk.agent_based.v2 import *
 from time import time
 from json import loads
 
 
+def parse_pvc(string_table):
+    hostname = string_table[0][0]
+    data = loads(" ".join(string_table[1]))
+    parsed = (hostname, data)
+    return parsed
+
+
 def discover_pvc(section):
-    my_node = host_name().split(".")[0]
+    my_node, _ = section
     yield Service(item=f"PVC Node {my_node}")
     yield Service(item="PVC Cluster")
 
 
 def check_pvc(item, params, section):
+    my_node, data = section
     state = State.OK
-    summary = "Stuff"
+    summary = ""
     details = None
-    data = loads(" ".join(section[0]))
-    my_node = host_name().split(".")[0]
 
     maintenance_map = {
         "true": "on",
@@ -44,7 +49,6 @@ def check_pvc(item, params, section):
 
     # Node check
     if item == f"PVC Node {my_node}":
-        my_node = host_name().split(".")[0]
         node_health = data["node_health"][my_node]["health"]
         node_messages = data["node_health"][my_node]["messages"]
 
@@ -85,7 +89,12 @@ def check_pvc(item, params, section):
     return
 
 
-register.check_plugin(
+agent_section_pvc = AgentSection(
+    name="pvc",
+    parse_function=parse_pvc,
+)
+
+check_plugin_pvc = CheckPlugin(
     name="pvc",
     service_name="%s",
     check_ruleset_name="pvc",
