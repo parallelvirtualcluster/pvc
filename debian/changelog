@@ -1,3 +1,9 @@
+pvc (1.0.2-0) unstable; urgency=high
+
+  * [Worker Daemon] [Bugfix] Fixed a bug in the calling of osd create-db-vg command worker
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 30 Jan 2026 09:58:00 -0500
+
 pvc (1.0.1-0) unstable; urgency=high
 
   * [CLI Client] [Bugfix] Fix bug with DELETE endpoints returning invalid data

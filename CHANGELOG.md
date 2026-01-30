@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v1.0.2](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0.2)
+
+  * [Worker Daemon] [Bugfix] Fixed a bug in the calling of osd create-db-vg command worker
+
 ###### [v1.0.1](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0.1)
 
   * [CLI Client] [Bugfix] Fix bug with DELETE endpoints returning invalid data
