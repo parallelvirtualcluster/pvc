@@ -2486,7 +2486,7 @@ def osd_worker_remove_osd(
     )
 
 
-def osd_worker_add_db_vg(zkhandler, celery, device):
+def osd_worker_add_db_vg(zkhandler, celery, node, device):
     # Set up stages
     current_stage = 0
     total_stages = 4
