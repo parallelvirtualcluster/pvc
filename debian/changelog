@@ -1,3 +1,10 @@
+pvc (1.0.3-0) unstable; urgency=high
+
+  * Fixes silent errors in the dnsmasq DHCP lease handler which can prevent leases from updating
+  * Improves the 3-debootstrap.py provisioner example script to work with Debian 13+
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sun, 01 Mar 2026 22:48:49 -0500
+
 pvc (1.0.2-0) unstable; urgency=high
 
   * [Worker Daemon] [Bugfix] Fixed a bug in the calling of osd create-db-vg command worker

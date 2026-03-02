@@ -58,7 +58,7 @@ from daemon_lib.automirror import (
 )
 
 # Daemon version
-version = "1.0.2"
+version = "1.0.3"
 
 
 config = cfg.get_configuration()

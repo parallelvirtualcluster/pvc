@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v1.0.3](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0.3)
+
+  * Fixes silent errors in the dnsmasq DHCP lease handler which can prevent leases from updating
+  * Improves the 3-debootstrap.py provisioner example script to work with Debian 13+
+
 ###### [v1.0.2](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0.2)
 
   * [Worker Daemon] [Bugfix] Fixed a bug in the calling of osd create-db-vg command worker
