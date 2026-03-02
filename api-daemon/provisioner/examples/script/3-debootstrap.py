@@ -485,6 +485,8 @@ class VMBuilderScript(VMBuilder):
                 "acpid",
                 "acpi-support-base",
                 "wget",
+                "ifupdown",  # be explicit for Debian 13+
+                "isc-dhcp-server",  # required for cloud-init on Debian 13+ where this is no longer standard
             ]
 
         # We need to know our root disk for later GRUB-ing
@@ -585,13 +587,15 @@ After=multi-user.target
                 disable_root: true
                 
                 preserve_hostname: true
+
+                network:
+                  config: disabled
                 
                 datasource:
                   Ec2:
                     metadata_urls: ["http://169.254.169.254:80"]
-                    max_wait: 30
-                    timeout: 30
-                    apply_full_imds_network_config: true
+                    max_wait: 5
+                    timeout: 5
                 
                 cloud_init_modules:
                  - migrator
