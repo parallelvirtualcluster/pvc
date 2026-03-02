@@ -130,21 +130,25 @@ def read_lease_database(zk_conn, zk_leases_key):
 def add_lease(zk_conn, zk_leases_key, expiry, macaddr, ipaddr, hostname, clientid):
     if not hostname:
         hostname = ""
-    transaction = zk_conn.transaction()
-    transaction.create("{}/{}".format(zk_leases_key, macaddr), "".encode("ascii"))
-    transaction.create(
-        "{}/{}/expiry".format(zk_leases_key, macaddr), expiry.encode("ascii")
-    )
-    transaction.create(
-        "{}/{}/ipaddr".format(zk_leases_key, macaddr), ipaddr.encode("ascii")
-    )
-    transaction.create(
-        "{}/{}/hostname".format(zk_leases_key, macaddr), hostname.encode("ascii")
-    )
-    transaction.create(
-        "{}/{}/clientid".format(zk_leases_key, macaddr), clientid.encode("ascii")
-    )
-    transaction.commit()
+    try:
+        zk_conn.delete("{}/{}".format(zk_leases_key, macaddr), recursive=True)
+        transaction = zk_conn.transaction()
+        transaction.create("{}/{}".format(zk_leases_key, macaddr), "".encode("ascii"))
+        transaction.create(
+            "{}/{}/expiry".format(zk_leases_key, macaddr), expiry.encode("ascii")
+        )
+        transaction.create(
+            "{}/{}/ipaddr".format(zk_leases_key, macaddr), ipaddr.encode("ascii")
+        )
+        transaction.create(
+            "{}/{}/hostname".format(zk_leases_key, macaddr), hostname.encode("ascii")
+        )
+        transaction.create(
+            "{}/{}/clientid".format(zk_leases_key, macaddr), clientid.encode("ascii")
+        )
+        transaction.commit()
+    except Exception as e:
+        print(f"FATAL: {e}")
 
 
 def del_lease(zk_conn, zk_leases_key, macaddr, expiry):
