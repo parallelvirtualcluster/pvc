@@ -37,6 +37,13 @@ class VXNetworkInstance(object):
         self.this_node = this_node
         self.dns_aggregator = dns_aggregator
         self.cluster_dev = config["cluster_dev"]
+        # The node's own Cluster network IP (without netmask); used as the explicit
+        # VXLAN tunnel source (VTEP) IP so encapsulated traffic is sourced from and
+        # routed over the Cluster network, regardless of the BGP router-id. Without
+        # this, the VXLAN device has no "local" and FRR falls back to advertising the
+        # router-id as the VTEP-IP, which silently pins the overlay to whatever network
+        # the router-id happens to live on (and its MTU).
+        self.cluster_dev_ip = config["cluster_dev_ip"].split("/")[0]
         self.cluster_mtu = config["cluster_mtu"]
         self.bridge_dev = config["bridge_dev"]
         self.bridge_mtu = config["bridge_mtu"]
@@ -670,9 +677,12 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
 
         # Create VXLAN interface
+        # The "local" tunnel source IP is pinned to this node's Cluster network IP so
+        # the VTEP lives on the Cluster network (and rides its MTU), instead of being
+        # derived from the FRR router-id via the EVPN originator-IP fallback.
         common.run_os_command(
-            "ip link add {} type vxlan id {} dstport 4789 dev {}".format(
-                self.base_nic, self.vni, self.cluster_dev
+            "ip link add {} type vxlan id {} dstport 4789 local {} dev {}".format(
+                self.base_nic, self.vni, self.cluster_dev_ip, self.cluster_dev
             )
         )
         # Create bridge interface
