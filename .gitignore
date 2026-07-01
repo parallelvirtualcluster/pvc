@@ -9,3 +9,12 @@ debian/*.log
 debian/*.substvars
 debian/files
 client-cli/build/
+
+# Raw cluster ZK backups contain real infra detail (IPs, MACs, VM names) — never commit raw
+tests/fixtures/cluster-backups/
+
+# Sanitized fixture is production-DERIVED; keep local until reviewed, then commit deliberately
+tests/fixtures/cluster-state.json
+
+# Golden-master snapshots are derived from cluster-state.json (production-derived); commit together after review
+tests/snapshots/
