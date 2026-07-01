@@ -149,7 +149,6 @@
 # This import is always required here, as VMBuilder is used by the VMBuilderScript class.
 from daemon_lib.vmbuilder import VMBuilder
 
-
 # These are some global variables used below
 default_root_password = "test123"
 default_local_time = "UTC"
@@ -649,9 +648,7 @@ GRUB_DISTRIBUTOR="PVC Virtual Machine"
 GRUB_CMDLINE_LINUX="root=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{root_volume} console=tty0 console=ttyS0,115200n8 no_timer_check crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M"
 GRUB_TERMINAL=console
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
-""".format(
-                root_volume=root_volume["scsi_id"]
-            )
+""".format(root_volume=root_volume["scsi_id"])
             fh.write(data)
 
         # Do some tasks inside the chroot using the provided context manager

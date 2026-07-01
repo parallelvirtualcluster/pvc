@@ -149,7 +149,6 @@
 # This import is always required here, as VMBuilder is used by the VMBuilderScript class.
 from daemon_lib.vmbuilder import VMBuilder
 
-
 # These are some global variables used below
 default_root_password = "test123"
 
@@ -582,8 +581,7 @@ After=multi-user.target
         # Write the cloud-init configuration
         ci_cfg_file = "{}/etc/cloud/cloud.cfg".format(temp_dir)
         with open(ci_cfg_file, "w") as fh:
-            fh.write(
-                """
+            fh.write("""
                 disable_root: true
                 
                 preserve_hostname: true
@@ -645,10 +643,7 @@ After=multi-user.target
                      - arches: [default]
                        failsafe:
                          primary: {deb_mirror}
-                """.format(
-                    deb_mirror=deb_mirror
-                )
-            )
+                """.format(deb_mirror=deb_mirror))
 
         # Due to device ordering within the Libvirt XML configuration, the first Ethernet interface
         # will always be on PCI bus ID 2, hence the name "ens2".
@@ -692,9 +687,7 @@ GRUB_CMDLINE_LINUX=""
 GRUB_TERMINAL=console
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
 GRUB_DISABLE_LINUX_UUID=false
-""".format(
-                root_volume=root_volume["scsi_id"]
-            )
+""".format(root_volume=root_volume["scsi_id"])
             fh.write(data)
 
         # Do some tasks inside the chroot using the provided context manager

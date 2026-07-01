@@ -186,9 +186,7 @@ add rule inet filter input ip6 nexthdr udp udp dport 547 meta iifname {bridgenic
 add rule inet filter input tcp dport 80 meta iifname {bridgenic} counter accept
 # Block traffic into the router from network
 add rule inet filter input meta iifname {bridgenic} counter drop
-""".format(
-            vxlannic=self.base_nic, bridgenic=self.bridge_nic
-        )
+""".format(vxlannic=self.base_nic, bridgenic=self.bridge_nic)
 
         self.firewall_rules_v4 = """# Jump from forward chain to this chain when matching net (IPv4)
 add rule inet filter forward ip daddr {netaddr4} counter jump {vxlannic}-in

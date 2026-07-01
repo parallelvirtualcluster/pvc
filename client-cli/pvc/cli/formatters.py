@@ -49,7 +49,6 @@ from pvc.lib.provisioner import format_list_script as provisioner_format_script_
 from pvc.lib.provisioner import format_list_ova as provisioner_format_ova_list
 from pvc.lib.provisioner import format_list_profile as provisioner_format_profile_list
 
-
 # Define colour values for use in formatters
 ansii = {
     "red": "\033[91m",

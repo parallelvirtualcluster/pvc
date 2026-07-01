@@ -415,7 +415,7 @@ def modify_vm_tag(zkhandler, domain, action, tag, protected=False):
         ):
             return False, 'The tag "{}" is protected and cannot be removed.'.format(tag)
 
-        zkhandler.delete([(("domain.meta.tags", dom_uuid, "tag", tag))])
+        zkhandler.delete([("domain.meta.tags", dom_uuid, "tag", tag)])
 
         return True, 'Successfully removed tag "{}" from VM "{}".'.format(tag, domain)
     else:

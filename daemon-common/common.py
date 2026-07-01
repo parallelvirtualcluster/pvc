@@ -35,7 +35,6 @@ from threading import Thread
 from shlex import split as shlex_split
 from functools import wraps
 
-
 ###############################################################################
 # Global Variables
 ###############################################################################

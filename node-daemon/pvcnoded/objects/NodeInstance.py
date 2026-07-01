@@ -544,18 +544,14 @@ class NodeInstance(object):
         # As long as we're in takeover, keep trying to set the Patroni leader to us
         while self.coordinator_state == "takeover":
             # Switch Patroni leader to the local instance
-            retcode, stdout, stderr = common.run_os_command(
-                """
+            retcode, stdout, stderr = common.run_os_command("""
                 patronictl
                     -c /etc/patroni/config.yml
                     switchover
                     --candidate {}
                     --force
                     pvc
-                """.format(
-                    self.name
-                )
-            )
+                """.format(self.name))
 
             # Combine the stdout and stderr and strip the output
             # Patronictl's output is pretty junky

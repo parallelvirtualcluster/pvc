@@ -37,7 +37,6 @@ import daemon_lib.common as common
 
 from daemon_lib.celery import start, log_info, log_warn, update, fail, finish
 
-
 #
 # Supplemental functions
 #

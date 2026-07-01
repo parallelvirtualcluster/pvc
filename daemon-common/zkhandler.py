@@ -29,7 +29,6 @@ from functools import wraps
 from kazoo.client import KazooClient, KazooState
 from kazoo.exceptions import NoNodeError
 
-
 DEFAULT_ROOT_PATH = "/usr/share/pvc"
 SCHEMA_PATH = "daemon_lib/migrations/versions"
 

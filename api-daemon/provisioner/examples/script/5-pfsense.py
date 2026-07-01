@@ -175,7 +175,6 @@
 # This import is always required here, as VMBuilder is used by the VMBuilderScript class.
 from daemon_lib.vmbuilder import VMBuilder
 
-
 # Set up some variables for later; if you frequently use these tools, you might benefit from
 # a local mirror, or store them on the hypervisor and adjust the prepare() tasks to use
 # those local copies instead.

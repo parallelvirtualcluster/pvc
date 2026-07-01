@@ -33,7 +33,6 @@ from daemon_lib.celery import start, fail, log_info, update, finish
 
 import daemon_lib.ceph as pvc_ceph
 
-
 # Define the current test format
 TEST_FORMAT = 2
 

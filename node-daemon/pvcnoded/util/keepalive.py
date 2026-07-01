@@ -37,7 +37,6 @@ import psutil
 import os
 import time
 
-
 # State table for pretty stats
 libvirt_vm_states = {
     0: "NOSTATE",

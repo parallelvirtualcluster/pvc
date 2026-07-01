@@ -29,7 +29,6 @@ from syslog import syslog, openlog, closelog, LOG_AUTH
 from yaml import load as yload
 from yaml import SafeLoader
 
-
 VERSION = "1.0.3"
 
 DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvc.conf"}

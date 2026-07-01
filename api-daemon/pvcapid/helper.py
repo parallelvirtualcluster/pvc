@@ -41,7 +41,6 @@ import daemon_lib.vm as pvc_vm
 import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)

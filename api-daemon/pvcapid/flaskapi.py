@@ -41,7 +41,6 @@ import pvcapid.ova as api_ova
 
 from flask_sqlalchemy import SQLAlchemy
 
-
 # Create Flask app and set config values
 app = flask.Flask(__name__)
 

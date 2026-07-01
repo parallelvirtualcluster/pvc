@@ -39,7 +39,6 @@ import daemon_lib.ceph as pvc_ceph
 
 import pvcapid.provisioner as provisioner
 
-
 #
 # Common functions
 #
@@ -584,10 +583,10 @@ class OVFParser(object):
             disk_res = hostref.text
 
             # Determine which file this disk_res ultimately represents
-            (disk_id, disk_ref, disk_capacity, disk_capacity_unit) = [
+            disk_id, disk_ref, disk_capacity, disk_capacity_unit = [
                 x for x in self.disklist if x[0] == disk_res.split("/")[-1]
             ][0]
-            (file_id, disk_src) = [x for x in self.filelist if x[0] == disk_ref][0]
+            file_id, disk_src = [x for x in self.filelist if x[0] == disk_ref][0]
 
             if disk_capacity_unit is not None:
                 # Handle the unit conversion

@@ -142,7 +142,7 @@ def entrypoint():
 
         logger.out("Hot update of schema version started", state="s")
         logger.out(
-            f"Current version: {node_schema_version,}  New version: {new_schema_version}",
+            f"Current version: {node_schema_version, }  New version: {new_schema_version}",
             state="s",
         )
 
