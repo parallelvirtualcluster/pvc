@@ -1,5 +1,11 @@
 ## PVC Changelog
 
+###### [v1.0.4](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0.4)
+
+  * [Node Daemon] Fixed a bug with VXLAN VTEP source addresses not traversing the cluster network properly
+  * [CLI Client] Adds an explicit dependency on python3-colorama for Debian 13+ support
+  * [General] Reformatted with Black 26.5.1
+
 ###### [v1.0.3](https://github.com/parallelvirtualcluster/pvc/releases/tag/v1.0.3)
 
   * Fixes silent errors in the dnsmasq DHCP lease handler which can prevent leases from updating
